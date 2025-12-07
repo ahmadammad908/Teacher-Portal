@@ -274,10 +274,10 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <button className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                {/* <button className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
                   <BookOpen className="h-4 w-4" />
                   <span>Add New</span>
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
@@ -726,15 +726,12 @@ export default function Dashboard() {
                     : 'This department currently has no lecture materials.'}
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-3 md:gap-4 px-4">
-                <button
-                  onClick={() => handleDepartmentSelect('all')}
-                  className="px-4 md:px-6 py-2.5 md:py-3 bg-gray-200 text-gray-700 font-medium rounded-lg md:rounded-xl hover:bg-gray-300 transition-all text-sm md:text-base"
-                >
-                  View All Departments
-                </button>
+                
+               <Link href={"/upload"}>
                 <button className="px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg md:rounded-xl hover:shadow-lg transition-all text-sm md:text-base">
-                  Upload Lecture
+                  Upload Document
                 </button>
+               </Link>
               </div>
             </div>
           )}
