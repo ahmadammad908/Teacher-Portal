@@ -91,9 +91,9 @@ export default function DepartmentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen ">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-200">
+      <header className="sticky top-0 z-10 ">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -118,7 +118,7 @@ export default function DepartmentPage() {
       </header>
 
       {/* Search Section */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+      <div className="">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="relative max-w-2xl mx-auto">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
