@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, X, Loader2, BookOpen, Hash, Building, ListOrdered, Calendar } from 'lucide-react'
+import { Upload, X, Loader2, BookOpen, Hash, Building, ListOrdered, Calendar, Beaker } from 'lucide-react'
 import { createClient } from '../../../lib/supabase/client'
 
 interface FileUploadProps {
@@ -120,11 +120,21 @@ const SUBJECTS_BY_DEPARTMENT: Record<DepartmentCategory, Array<{id: string, name
   ]
 }
 
-// Generate lecture numbers 1-48 WITH ORDER
-const LECTURE_NUMBERS = Array.from({ length: 48 }, (_, i) => ({ 
-  number: (i + 1).toString(), 
-  order: i + 1 
-}))
+// Generate lecture numbers 1-48 (Regular Lectures) and 1-16 (Lab Lectures)
+const LECTURE_NUMBERS = [
+  // Regular lectures 1-48 first
+  ...Array.from({ length: 48 }, (_, i) => ({ 
+    number: (i + 1).toString(), 
+    order: i + 1,
+    type: 'regular'
+  })),
+  // Lab lectures 1-16 after regular lectures
+  ...Array.from({ length: 16 }, (_, i) => ({ 
+    number: `${i + 1}(Lab)`, 
+    order: i + 49, // Starting from 49 after 48 regular lectures
+    type: 'lab'
+  }))
+]
 
 // Semester information for ordering
 const SEMESTER_ORDER = {
@@ -148,6 +158,7 @@ export default function FileUpload({
   const [department, setDepartment] = useState<DepartmentCategory>('BSCS-1st')
   const [selectedSubject, setSelectedSubject] = useState<string>('')
   const [lectureNumber, setLectureNumber] = useState<string>('')
+  const [lectureType, setLectureType] = useState<'regular' | 'lab'>('regular')
   
   // Sequence information
   const [departmentOrder, setDepartmentOrder] = useState<number>(5) // BSCS-1st has order 5
@@ -168,6 +179,7 @@ export default function FileUpload({
     // Reset selected subject when department changes
     setSelectedSubject('')
     setLectureNumber('')
+    setLectureType('regular')
     setSubjectOrder(0)
     setLectureOrder(0)
     setFullSequence('')
@@ -188,12 +200,14 @@ export default function FileUpload({
   }, [selectedSubject, availableSubjects])
 
   useEffect(() => {
-    // Update lecture order when lecture number changes
+    // Update lecture order and type when lecture number changes
     if (lectureNumber) {
       const lectureData = LECTURE_NUMBERS.find(lec => lec.number === lectureNumber)
       setLectureOrder(lectureData?.order || 0)
+      setLectureType(lectureData?.type === 'lab' ? 'lab' : 'regular')
     } else {
       setLectureOrder(0)
+      setLectureType('regular')
     }
   }, [lectureNumber])
 
@@ -311,7 +325,11 @@ export default function FileUpload({
       const teacherName = subjectParts.length > 1 ? subjectParts[subjectParts.length - 1] : ''
 
       // Create lecture title with sequence
-      const lectureTitle = `${subjectName} - Lecture ${lectureNumber.padStart(2, '0')}`
+      const isLab = lectureNumber.includes('(Lab)')
+      const lectureNum = isLab ? lectureNumber.replace('(Lab)', '') : lectureNumber
+      const lectureTitle = isLab 
+        ? `${subjectName} - Lecture ${lectureNum.padStart(2, '0')} (Lab)`
+        : `${subjectName} - Lecture ${lectureNum.padStart(2, '0')}`
 
       // Extract semester from department
       const semesterMatch = department.match(/(\d+)(?:st|nd|rd|th)/)
@@ -322,11 +340,17 @@ export default function FileUpload({
       const tags = [
         department,
         subjectName.trim().replace(/\s+/g, '-').toLowerCase(),
-        `lecture-${lectureNumber.padStart(2, '0')}`,
+        isLab 
+          ? `lab-${lectureNum.padStart(2, '0')}`
+          : `lecture-${lectureNum.padStart(2, '0')}`,
         teacherName.trim().replace(/\s+/g, '-').toLowerCase(),
-        `lecture-no-${lectureNumber.padStart(2, '0')}`,
+        isLab
+          ? `lab-no-${lectureNum.padStart(2, '0')}`
+          : `lecture-no-${lectureNum.padStart(2, '0')}`,
         `sequence-${fullSequence}`,
-        `semester-${semester}`
+        `semester-${semester}`,
+        isLab ? 'lab' : 'lecture',
+        isLab ? 'practical' : 'theory'
       ].filter(Boolean)
 
       // Prepare metadata for database
@@ -339,12 +363,15 @@ export default function FileUpload({
         download_url: urlData.publicUrl,
         teacher_name: teacherName.trim(),
         subject_name: subjectName.trim(),
-        lecture_no: parseInt(lectureNumber), // Lecture number as integer
+        lecture_no: lectureNumber, // Now as string since it can be "1" or "1(Lab)"
         lecture_title: lectureTitle,
         department: department,
         file_extension: fileExt,
         tags: tags,
         uploaded_at: new Date().toISOString(),
+        
+        // Type field for lab/regular
+        lecture_type: isLab ? 'lab' : 'regular',
         
         // Sequence fields for ordering
         department_order: departmentOrder,
@@ -354,7 +381,7 @@ export default function FileUpload({
         full_sequence: fullSequence,
         
         // For easy querying
-        searchable_text: `${department} ${subjectName} ${teacherName} Lecture ${lectureNumber} ${tags.join(' ')}`.toLowerCase()
+        searchable_text: `${department} ${subjectName} ${teacherName} ${isLab ? 'Lab' : 'Lecture'} ${lectureNum} ${tags.join(' ')}`.toLowerCase()
       }
 
       // Save metadata to database
@@ -377,6 +404,7 @@ export default function FileUpload({
         setSelectedFile(null)
         setSelectedSubject('')
         setLectureNumber('')
+        setLectureType('regular')
         setDepartment('BSCS-1st')
         setDepartmentOrder(5)
         setSubjectOrder(0)
@@ -508,7 +536,11 @@ export default function FileUpload({
           {/* Lecture Number Selection */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              <Hash className="inline h-4 w-4 mr-1 text-purple-500" />
+              {lectureType === 'lab' ? (
+                <Beaker className="inline h-4 w-4 mr-1 text-purple-500" />
+              ) : (
+                <Hash className="inline h-4 w-4 mr-1 text-purple-500" />
+              )}
               Lecture Number *
             </label>
             <select
@@ -518,16 +550,27 @@ export default function FileUpload({
               disabled={uploading || !selectedSubject}
             >
               <option value="">Select Lecture No.</option>
-              {LECTURE_NUMBERS.map((lec) => (
-                <option key={lec.number} value={lec.number}>
-                  Lecture {lec.number.padStart(2, '0')}
-                </option>
-              ))}
+              {/* Regular Lectures Section */}
+              <optgroup label="📚 Regular Lectures">
+                {LECTURE_NUMBERS.filter(lec => lec.type === 'regular').map((lec) => (
+                  <option key={`${lec.number}-${lec.type}`} value={lec.number}>
+                    Lecture {lec.number.padStart(2, '0')}
+                  </option>
+                ))}
+              </optgroup>
+              {/* Lab Lectures Section */}
+              <optgroup label="🔬 Lab Lectures">
+                {LECTURE_NUMBERS.filter(lec => lec.type === 'lab').map((lec) => (
+                  <option key={`${lec.number}-${lec.type}`} value={lec.number}>
+                    Lecture {lec.number.replace('(Lab)', '').padStart(2, '0')} (Lab)
+                  </option>
+                ))}
+              </optgroup>
             </select>
             {lectureOrder > 0 && (
               <div className="text-xs text-gray-500 flex items-center">
                 <ListOrdered className="h-3 w-3 mr-1" />
-                Order: {lectureOrder}
+                Order: {lectureOrder} • Type: {lectureType === 'lab' ? '🔬 Lab' : '📚 Lecture'}
               </div>
             )}
           </div>
@@ -553,8 +596,9 @@ export default function FileUpload({
                 </div>
                 <div className="text-gray-400">→</div>
                 <div className="text-center">
-                  <div className="text-sm text-gray-600">Lecture</div>
+                  <div className="text-sm text-gray-600">{lectureType === 'lab' ? 'Lab' : 'Lecture'}</div>
                   <div className="font-bold text-lg text-purple-700">{lectureOrder}</div>
+                  <div className="text-xs text-gray-500">{lectureType === 'lab' ? '🔬' : '📚'}</div>
                 </div>
                 <div className="ml-4 px-3 py-1 bg-blue-600 text-white rounded-lg font-mono">
                   {fullSequence}
@@ -656,10 +700,13 @@ export default function FileUpload({
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-600">Lecture:</span>
+                  <span className="text-gray-600">{lectureType === 'lab' ? 'Lab Lecture:' : 'Lecture:'}</span>
                   <span className="font-medium text-gray-800">
-                    #{lectureNumber.padStart(2, '0')}
-                    <div className="text-purple-600 text-sm">Order: {lectureOrder}</div>
+                    {lectureType === 'lab' ? '🔬' : '📚'} #{lectureNumber.includes('(Lab)') ? lectureNumber.replace('(Lab)', '').padStart(2, '0') : lectureNumber.padStart(2, '0')}
+                    {lectureType === 'lab' ? ' (Lab)' : ''}
+                    <div className="text-purple-600 text-sm">
+                      Order: {lectureOrder} • {lectureType === 'lab' ? 'Lab' : 'Regular'}
+                    </div>
                   </span>
                 </div>
               </div>
@@ -697,12 +744,12 @@ export default function FileUpload({
             {uploading ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin mr-3" />
-                Uploading Lecture Material...
+                Uploading {lectureType === 'lab' ? 'Lab Material' : 'Lecture Material'}...
               </>
             ) : (
               <>
                 <Upload className="h-5 w-5 mr-3" />
-                Upload Lecture Material
+                Upload {lectureType === 'lab' ? 'Lab Material' : 'Lecture Material'}
               </>
             )}
           </button>
@@ -733,12 +780,22 @@ export default function FileUpload({
         <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
           <li><span className="font-medium">Department Order:</span> Determined by department selection order</li>
           <li><span className="font-medium">Subject Order:</span> Determined by subject order within department</li>
-          <li><span className="font-medium">Lecture Order:</span> Lecture number (1-48) determines order</li>
+          <li><span className="font-medium">Lecture Order:</span> Regular lectures (1-48), Lab lectures (49-64)</li>
           <li><span className="font-medium">Full Sequence:</span> Format: Department-Subject-Lecture (e.g., 05_02_15)</li>
           <li>Files will be fetched in sequence order for easy navigation</li>
           <li>Same sequence will be used for organizing in storage</li>
-          <li>You can filter and sort by sequence fields in the documents list</li>
+          <li>You can filter by lecture type (Lab/Regular) in the documents list</li>
         </ul>
+        <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-100">
+          <p className="text-sm font-medium text-blue-800">📚 Regular Lectures vs 🔬 Lab Lectures:</p>
+          <p className="text-xs text-blue-700 mt-1">
+            • Regular lectures: 1-48 (Order 1-48)
+            <br />
+            • Lab lectures: 1-16 (Order 49-64)
+            <br />
+            • Lab lectures will appear after all regular lectures in the sequence
+          </p>
+        </div>
       </div>
     </div>
   )
