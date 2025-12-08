@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, X, Loader2, BookOpen, Hash, Building, ListOrdered, Calendar, Beaker } from 'lucide-react'
+import { Upload, X, Loader2, BookOpen, Hash, Building, ListOrdered, Calendar, Beaker, FileText, CheckCircle } from 'lucide-react'
 import { createClient } from '../../../lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 interface FileUploadProps {
   onUploadComplete?: () => void
@@ -131,7 +132,7 @@ const LECTURE_NUMBERS = [
   // Lab lectures 1-16 after regular lectures
   ...Array.from({ length: 16 }, (_, i) => ({ 
     number: `${i + 1}(Lab)`, 
-    order: i + 49, // Starting from 49 after 48 regular lectures
+    order: i + 49,
     type: 'lab'
   }))
 ]
@@ -149,9 +150,11 @@ export default function FileUpload({
   onUploadComplete, 
   maxSize = 50 * 1024 * 1024 // 50MB default
 }: FileUploadProps) {
+  const router = useRouter()
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   
   // Form fields
@@ -161,7 +164,7 @@ export default function FileUpload({
   const [lectureType, setLectureType] = useState<'regular' | 'lab'>('regular')
   
   // Sequence information
-  const [departmentOrder, setDepartmentOrder] = useState<number>(5) // BSCS-1st has order 5
+  const [departmentOrder, setDepartmentOrder] = useState<number>(5)
   const [subjectOrder, setSubjectOrder] = useState<number>(0)
   const [lectureOrder, setLectureOrder] = useState<number>(0)
   const [fullSequence, setFullSequence] = useState<string>('')
@@ -172,7 +175,6 @@ export default function FileUpload({
   )
 
   useEffect(() => {
-    // Update subjects when department changes
     const subjects = SUBJECTS_BY_DEPARTMENT[department] || []
     setAvailableSubjects(subjects)
     
@@ -190,7 +192,6 @@ export default function FileUpload({
   }, [department])
 
   useEffect(() => {
-    // Update subject order when subject changes
     if (selectedSubject) {
       const subjectData = availableSubjects.find(sub => sub.name === selectedSubject)
       setSubjectOrder(subjectData?.order || 0)
@@ -200,7 +201,6 @@ export default function FileUpload({
   }, [selectedSubject, availableSubjects])
 
   useEffect(() => {
-    // Update lecture order and type when lecture number changes
     if (lectureNumber) {
       const lectureData = LECTURE_NUMBERS.find(lec => lec.number === lectureNumber)
       setLectureOrder(lectureData?.order || 0)
@@ -212,9 +212,7 @@ export default function FileUpload({
   }, [lectureNumber])
 
   useEffect(() => {
-    // Update full sequence when all fields are selected
     if (departmentOrder > 0 && subjectOrder > 0 && lectureOrder > 0) {
-      // Format: DEPT-ORDER_SUBJECT-ORDER_LECTURE-ORDER
       const sequence = `${departmentOrder.toString().padStart(2, '0')}_${subjectOrder.toString().padStart(2, '0')}_${lectureOrder.toString().padStart(2, '0')}`
       setFullSequence(sequence)
     }
@@ -274,6 +272,7 @@ export default function FileUpload({
 
     setUploading(true)
     setError(null)
+    setSuccess(false)
     setProgress(10)
 
     try {
@@ -363,7 +362,7 @@ export default function FileUpload({
         download_url: urlData.publicUrl,
         teacher_name: teacherName.trim(),
         subject_name: subjectName.trim(),
-        lecture_no: lectureNumber, // Now as string since it can be "1" or "1(Lab)"
+        lecture_no: lectureNumber,
         lecture_title: lectureTitle,
         department: department,
         file_extension: fileExt,
@@ -398,9 +397,11 @@ export default function FileUpload({
       }
 
       setProgress(100)
+      setSuccess(true)
       
-      // Reset form
+      // Show success message for 2 seconds, then navigate
       setTimeout(() => {
+        // Reset form
         setSelectedFile(null)
         setSelectedSubject('')
         setLectureNumber('')
@@ -413,10 +414,14 @@ export default function FileUpload({
         setProgress(0)
         setUploading(false)
         
+        // Call callback if provided
         if (onUploadComplete) {
           onUploadComplete()
         }
-      }, 1000)
+        
+        // Navigate to documents page
+        router.push('/')
+      }, 2000)
 
     } catch (err: any) {
       console.error('Upload error:', err)
@@ -462,341 +467,403 @@ export default function FileUpload({
     return iconMap[ext || ''] || '📎'
   }
 
+  const getStatusIcon = () => {
+    if (success) return <CheckCircle className="h-5 w-5 text-green-500" />
+    if (uploading) return <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+    return null
+  }
+
   return (
-    <div className="w-full max-w-4xl mx-auto p-6">
+    <div className="w-full max-w-6xl mx-auto p-3 md:p-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Upload Lecture Material</h1>
-        <p className="text-gray-600 mt-2">
-          Upload your lecture files (PDF, PPT, DOC, Images) with complete information
-        </p>
+      <div className="mb-6 md:mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl md:text-3xl font-bold text-gray-800">Upload Lecture Material</h1>
+            <p className="text-gray-600 mt-1 md:mt-2 text-xs md:text-base">
+              Upload your lecture files with complete academic information
+            </p>
+          </div>
+          {getStatusIcon() && (
+            <div className="flex items-center space-x-2">
+              {getStatusIcon()}
+              <span className="text-sm font-medium">
+                {success ? 'Upload Successful!' : 'Uploading...'}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Form Section */}
-      <div className="mb-8 bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-        <h2 className="text-xl font-bold mb-6 text-gray-800 border-b pb-3 flex items-center">
-          <BookOpen className="h-5 w-5 mr-2 text-blue-600" />
-          Lecture Information
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Department Selection */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              <Building className="inline h-4 w-4 mr-1 text-orange-500" />
-              Department & Semester *
-            </label>
-            <select
-              value={department}
-              onChange={(e) => setDepartment(e.target.value as DepartmentCategory)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
-              disabled={uploading}
-            >
-              {DEPARTMENT_CATEGORIES.map((dept) => (
-                <option key={dept.id} value={dept.id}>
-                  {dept.name}
-                </option>
-              ))}
-            </select>
-            {departmentOrder > 0 && (
-              <div className="text-xs text-gray-500 flex items-center">
-                <ListOrdered className="h-3 w-3 mr-1" />
-                Order: {departmentOrder}
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+        {/* Left Column: Form and Upload */}
+        <div className="lg:col-span-2 space-y-4 md:space-y-6">
+          {/* Form Section */}
+          <div className="bg-white rounded-xl md:rounded-2xl shadow-lg p-3 md:p-6 border border-gray-200">
+            <div className="flex items-center mb-4 md:mb-6 pb-3 md:pb-4 border-b border-gray-100">
+              <div className="p-2 bg-blue-50 rounded-lg mr-2 md:mr-3">
+                <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
               </div>
-            )}
-          </div>
-
-          {/* Subject Selection */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              <BookOpen className="inline h-4 w-4 mr-1 text-green-500" />
-              Subject with Teacher *
-            </label>
-            <select
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
-              disabled={uploading || !department}
-            >
-              <option value="">Select Subject</option>
-              {availableSubjects.map((subject) => (
-                <option key={subject.id} value={subject.name}>
-                  {subject.name}
-                </option>
-              ))}
-            </select>
-            {subjectOrder > 0 && (
-              <div className="text-xs text-gray-500 flex items-center">
-                <ListOrdered className="h-3 w-3 mr-1" />
-                Order: {subjectOrder}
+              <div>
+                <h2 className="text-lg md:text-xl font-bold text-gray-800">Lecture Information</h2>
+                <p className="text-gray-600 text-xs md:text-sm">Fill in all required fields</p>
               </div>
-            )}
-          </div>
+            </div>
+            
+            <div className="space-y-3 md:space-y-6">
+              {/* Department Selection */}
+              <div className="space-y-1 md:space-y-2">
+                <label className="block text-xs md:text-sm font-medium text-gray-700">
+                  <span className="flex items-center">
+                    <Building className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 text-orange-500" />
+                    Department & Semester *
+                  </span>
+                </label>
+                <select
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value as DepartmentCategory)}
+                  className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 md:focus:ring-3 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-xs md:text-base disabled:bg-gray-50"
+                  disabled={uploading}
+                >
+                  {DEPARTMENT_CATEGORIES.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Lecture Number Selection */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              {lectureType === 'lab' ? (
-                <Beaker className="inline h-4 w-4 mr-1 text-purple-500" />
-              ) : (
-                <Hash className="inline h-4 w-4 mr-1 text-purple-500" />
+              {/* Subject Selection */}
+              <div className="space-y-1 md:space-y-2">
+                <label className="block text-xs md:text-sm font-medium text-gray-700">
+                  <span className="flex items-center">
+                    <FileText className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 text-green-500" />
+                    Subject with Teacher *
+                  </span>
+                </label>
+                <select
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(e.target.value)}
+                  className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 md:focus:ring-3 focus:ring-green-500/20 focus:border-green-500 transition-all text-xs md:text-base disabled:bg-gray-50"
+                  disabled={uploading || !department}
+                >
+                  <option value="">Select Subject</option>
+                  {availableSubjects.map((subject) => (
+                    <option key={subject.id} value={subject.name}>
+                      {subject.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Lecture Number Selection */}
+              <div className="space-y-1 md:space-y-2">
+                <label className="block text-xs md:text-sm font-medium text-gray-700">
+                  <span className="flex items-center">
+                    {lectureType === 'lab' ? (
+                      <Beaker className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 text-purple-500" />
+                    ) : (
+                      <Hash className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 text-purple-500" />
+                    )}
+                    Lecture Number *
+                  </span>
+                </label>
+                <select
+                  value={lectureNumber}
+                  onChange={(e) => setLectureNumber(e.target.value)}
+                  className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 md:focus:ring-3 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-xs md:text-base disabled:bg-gray-50"
+                  disabled={uploading || !selectedSubject}
+                >
+                  <option value="">Select Lecture No.</option>
+                  <optgroup label="📚 Regular Lectures">
+                    {LECTURE_NUMBERS.filter(lec => lec.type === 'regular').map((lec) => (
+                      <option key={`${lec.number}-${lec.type}`} value={lec.number}>
+                        Lecture {lec.number.padStart(2, '0')}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="🔬 Lab Lectures">
+                    {LECTURE_NUMBERS.filter(lec => lec.type === 'lab').map((lec) => (
+                      <option key={`${lec.number}-${lec.type}`} value={lec.number}>
+                        Lecture {lec.number.replace('(Lab)', '').padStart(2, '0')} (Lab)
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* Sequence Display - Fixed Overflow */}
+              {fullSequence && (
+                <div className="mt-3 md:mt-4 p-3 md:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg md:rounded-xl border border-blue-200">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center">
+                      <ListOrdered className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2 text-blue-600" />
+                      <span className="font-medium text-blue-800 text-xs md:text-sm">Sequence Information</span>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 md:gap-3">
+                      {/* Sequence Flow */}
+                      <div className="flex items-center justify-center flex-wrap gap-1 md:gap-2">
+                        <div className="text-center min-w-[40px] md:min-w-[50px]">
+                          <div className="text-xs text-gray-600">Dept</div>
+                          <div className="font-bold text-base md:text-lg text-blue-700">{departmentOrder}</div>
+                        </div>
+                        <div className="text-gray-300 md:text-gray-400 mx-1">→</div>
+                        <div className="text-center min-w-[40px] md:min-w-[50px]">
+                          <div className="text-xs text-gray-600">Subject</div>
+                          <div className="font-bold text-base md:text-lg text-green-700">{subjectOrder}</div>
+                        </div>
+                        <div className="text-gray-300 md:text-gray-400 mx-1">→</div>
+                        <div className="text-center min-w-[40px] md:min-w-[50px]">
+                          <div className="text-xs text-gray-600">{lectureType === 'lab' ? 'Lab' : 'Lec'}</div>
+                          <div className="font-bold text-base md:text-lg text-purple-700">{lectureOrder}</div>
+                        </div>
+                      </div>
+                      
+                      {/* Sequence Code - Now wraps on mobile */}
+                      <div className="w-full sm:w-auto mt-2 sm:mt-0">
+                        <div className="px-2 md:px-3 py-1 md:py-1.5 bg-blue-600 text-white rounded-lg font-mono text-xs md:text-sm text-center sm:text-left break-all">
+                          {fullSequence}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
-              Lecture Number *
-            </label>
-            <select
-              value={lectureNumber}
-              onChange={(e) => setLectureNumber(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
-              disabled={uploading || !selectedSubject}
-            >
-              <option value="">Select Lecture No.</option>
-              {/* Regular Lectures Section */}
-              <optgroup label="📚 Regular Lectures">
-                {LECTURE_NUMBERS.filter(lec => lec.type === 'regular').map((lec) => (
-                  <option key={`${lec.number}-${lec.type}`} value={lec.number}>
-                    Lecture {lec.number.padStart(2, '0')}
-                  </option>
-                ))}
-              </optgroup>
-              {/* Lab Lectures Section */}
-              <optgroup label="🔬 Lab Lectures">
-                {LECTURE_NUMBERS.filter(lec => lec.type === 'lab').map((lec) => (
-                  <option key={`${lec.number}-${lec.type}`} value={lec.number}>
-                    Lecture {lec.number.replace('(Lab)', '').padStart(2, '0')} (Lab)
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-            {lectureOrder > 0 && (
-              <div className="text-xs text-gray-500 flex items-center">
-                <ListOrdered className="h-3 w-3 mr-1" />
-                Order: {lectureOrder} • Type: {lectureType === 'lab' ? '🔬 Lab' : '📚 Lecture'}
-              </div>
-            )}
+            </div>
           </div>
-        </div>
 
-        {/* Sequence Display */}
-        {fullSequence && (
-          <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <ListOrdered className="h-5 w-5 mr-2 text-blue-600" />
-                <span className="font-medium text-blue-800">Sequence Information:</span>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="text-center">
-                  <div className="text-sm text-gray-600">Department</div>
-                  <div className="font-bold text-lg text-blue-700">{departmentOrder}</div>
+          {/* File Upload Section */}
+          <div className="bg-white rounded-xl md:rounded-2xl shadow-lg p-3 md:p-6 border border-gray-200">
+            <div
+              {...getRootProps()}
+              className={`border-2 md:border-3 border-dashed rounded-lg md:rounded-xl p-4 md:p-8 lg:p-12 text-center cursor-pointer transition-all duration-300
+                ${isDragActive ? 'border-blue-500 bg-blue-50 scale-[1.01] shadow-lg' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'}
+                ${uploading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                shadow-sm hover:shadow-md`}
+            >
+              <input {...getInputProps()} disabled={uploading} />
+              <div className="flex flex-col items-center">
+                <div className={`p-2 md:p-4 rounded-full mb-2 md:mb-4 ${isDragActive ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                  <Upload className={`h-6 w-6 md:h-10 md:w-10 lg:h-16 lg:w-16 ${isDragActive ? 'text-blue-500' : 'text-gray-400'}`} />
                 </div>
-                <div className="text-gray-400">→</div>
-                <div className="text-center">
-                  <div className="text-sm text-gray-600">Subject</div>
-                  <div className="font-bold text-lg text-green-700">{subjectOrder}</div>
-                </div>
-                <div className="text-gray-400">→</div>
-                <div className="text-center">
-                  <div className="text-sm text-gray-600">{lectureType === 'lab' ? 'Lab' : 'Lecture'}</div>
-                  <div className="font-bold text-lg text-purple-700">{lectureOrder}</div>
-                  <div className="text-xs text-gray-500">{lectureType === 'lab' ? '🔬' : '📚'}</div>
-                </div>
-                <div className="ml-4 px-3 py-1 bg-blue-600 text-white rounded-lg font-mono">
-                  {fullSequence}
-                </div>
+                <p className="mt-1 md:mt-2 text-sm md:text-lg lg:text-xl font-semibold text-gray-800">
+                  {isDragActive ? '📦 Drop your file here' : '📤 Upload your lecture file'}
+                </p>
+                <p className="text-gray-600 mt-1 md:mt-2 text-xs md:text-base">
+                  Drag & drop or click to browse
+                </p>
+                <p className="text-xs text-gray-500 mt-2 md:mt-4 bg-gray-100 inline-block px-2 py-1 md:px-3 md:py-1.5 rounded">
+                  PDF, PPT, DOC, Images, Excel, ZIP (Max: {formatFileSize(maxSize)})
+                </p>
               </div>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* File Upload Section */}
-      <div className="mb-8">
-        <div
-          {...getRootProps()}
-          className={`border-3 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-300
-            ${isDragActive ? 'border-blue-500 bg-blue-50 scale-[1.02]' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'}
-            ${uploading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
-            shadow-sm hover:shadow-md`}
-        >
-          <input {...getInputProps()} disabled={uploading} />
-          <Upload className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-          <p className="mt-4 text-xl font-semibold text-gray-700">
-            {isDragActive ? '📦 Drop the lecture file here!' : '📤 Drag & drop your lecture file'}
-          </p>
-          <p className="text-gray-600 mt-2">
-            or click to browse files
-          </p>
-          <p className="text-sm text-gray-500 mt-4 bg-gray-100 inline-block px-4 py-2 rounded-lg">
-            Supported: PDF, PPT, PPTX, DOC, DOCX, TXT, Images, Excel, ZIP (Max: {formatFileSize(maxSize)})
-          </p>
         </div>
-      </div>
 
-      {/* Selected File Preview */}
-      {selectedFile && (
-        <div className="mt-6 p-6 bg-white rounded-xl shadow-lg border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              <div className="text-3xl">
-                {getFileIcon(selectedFile.name)}
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-gray-800 text-lg truncate">{selectedFile.name}</p>
-                <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                  <span className="bg-gray-100 px-2 py-1 rounded">
-                    {formatFileSize(selectedFile.size)}
-                  </span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">
-                    {selectedFile.type || 'Unknown type'}
-                  </span>
+        {/* Right Column: Preview and Info */}
+        <div className="space-y-4 md:space-y-6">
+          {/* Selected File Preview */}
+          {selectedFile && (
+            <div className="bg-white rounded-xl md:rounded-2xl shadow-lg p-3 md:p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <div className="flex items-center">
+                  <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg mr-2 md:mr-3">
+                    <FileText className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800 text-sm md:text-base">Selected File</h3>
                 </div>
+                <button
+                  onClick={removeFile}
+                  disabled={uploading}
+                  className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-50 transition-colors"
+                  title="Remove file"
+                >
+                  <X className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                </button>
               </div>
-            </div>
-            <button
-              onClick={removeFile}
-              disabled={uploading}
-              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full disabled:opacity-50 transition-colors"
-              title="Remove file"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
 
-          {/* Upload Progress */}
-          {uploading && (
-            <div className="mb-6">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-medium text-blue-600">Uploading...</span>
-                <span className="font-bold text-blue-700">{progress}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                <div
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300 shadow-sm"
-                  style={{ width: `${progress}%` }}
-                />
+              <div className="space-y-3 md:space-y-4">
+                {/* File Info - Fixed Overflow */}
+                <div className="flex items-start space-x-2 md:space-x-3 p-2 md:p-3 bg-gray-50 rounded-lg">
+                  <div className="text-xl md:text-2xl flex-shrink-0">
+                    {getFileIcon(selectedFile.name)}
+                  </div>
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <p className="font-medium text-gray-800 text-xs md:text-sm break-words overflow-hidden">
+                      {selectedFile.name}
+                    </p>
+                    <div className="flex flex-wrap gap-1 md:gap-2 mt-1 md:mt-2">
+                      <span className="text-xs text-gray-600 bg-white px-1.5 py-0.5 md:px-2 md:py-1 rounded">
+                        {formatFileSize(selectedFile.size)}
+                      </span>
+                      <span className="text-xs text-gray-600 bg-white px-1.5 py-0.5 md:px-2 md:py-1 rounded truncate max-w-[100px] md:max-w-none">
+                        {selectedFile.type?.split('/').pop() || 'Unknown'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Upload Progress */}
+                {uploading && (
+                  <div className="space-y-1 md:space-y-2">
+                    <div className="flex justify-between text-xs md:text-sm">
+                      <span className="font-medium text-blue-600">Uploading...</span>
+                      <span className="font-bold text-blue-700">{progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 md:h-2 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-1.5 md:h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Summary - Fixed Alignment */}
+                <div className="space-y-2 md:space-y-3">
+                  <div className="flex items-center text-xs md:text-sm text-gray-600">
+                    <Building className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1.5 md:mr-2 text-orange-500 flex-shrink-0" />
+                    <span className="truncate">{department}</span>
+                  </div>
+                  <div className="flex items-center text-xs md:text-sm text-gray-600">
+                    <FileText className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1.5 md:mr-2 text-green-500 flex-shrink-0" />
+                    <span className="truncate">{selectedSubject || 'No subject selected'}</span>
+                  </div>
+                  <div className="flex items-center text-xs md:text-sm text-gray-600">
+                    {lectureType === 'lab' ? (
+                      <Beaker className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1.5 md:mr-2 text-purple-500 flex-shrink-0" />
+                    ) : (
+                      <Hash className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1.5 md:mr-2 text-purple-500 flex-shrink-0" />
+                    )}
+                    <span className="truncate">
+                      {lectureNumber.includes('(Lab)') 
+                        ? `Lab ${lectureNumber.replace('(Lab)', '')}` 
+                        : `Lecture ${lectureNumber}`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Upload Button */}
+                <button
+                  onClick={handleUpload}
+                  disabled={uploading || !selectedFile || !fullSequence}
+                  className={`w-full py-2 md:py-3 px-3 md:px-4 rounded-lg md:rounded-xl font-semibold transition-all duration-200 flex items-center justify-center text-sm md:text-base
+                    ${uploading || !selectedFile || !fullSequence
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-lg'
+                    }`}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 md:h-4 md:w-4 animate-spin mr-1.5 md:mr-2" />
+                      <span className="truncate">Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
+                      <span className="truncate">Upload Lecture</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           )}
 
-          {/* Summary Card */}
-          <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-            <h3 className="font-semibold text-blue-800 mb-3 flex items-center">
-              <Calendar className="h-4 w-4 mr-2" />
-              Upload Summary
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-blue-100">
-                  <span className="text-gray-600">Department:</span>
-                  <span className="font-medium text-gray-800">
-                    {department} <span className="text-blue-600">(Order: {departmentOrder})</span>
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-blue-100">
-                  <span className="text-gray-600">Subject:</span>
-                  <span className="font-medium text-gray-800 text-right max-w-[200px] truncate">
-                    {selectedSubject}
-                    <div className="text-green-600 text-sm">Order: {subjectOrder}</div>
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-600">{lectureType === 'lab' ? 'Lab Lecture:' : 'Lecture:'}</span>
-                  <span className="font-medium text-gray-800">
-                    {lectureType === 'lab' ? '🔬' : '📚'} #{lectureNumber.includes('(Lab)') ? lectureNumber.replace('(Lab)', '').padStart(2, '0') : lectureNumber.padStart(2, '0')}
-                    {lectureType === 'lab' ? ' (Lab)' : ''}
-                    <div className="text-purple-600 text-sm">
-                      Order: {lectureOrder} • {lectureType === 'lab' ? 'Lab' : 'Regular'}
-                    </div>
-                  </span>
-                </div>
+          {/* Information Card */}
+          <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl md:rounded-2xl p-3 md:p-6 border border-gray-200">
+            <div className="flex items-center mb-3 md:mb-4">
+              <div className="p-1.5 md:p-2 bg-blue-100 rounded-lg mr-2 md:mr-3">
+                <ListOrdered className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
               </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-blue-100">
-                  <span className="text-gray-600">File:</span>
-                  <span className="font-medium text-gray-800 truncate max-w-[200px] text-right">
-                    {selectedFile.name}
-                  </span>
+              <h4 className="font-semibold text-gray-800 text-sm md:text-base">Sequence Guidelines</h4>
+            </div>
+            
+            <div className="space-y-2 md:space-y-3">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-blue-500"></div>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-blue-100">
-                  <span className="text-gray-600">Size:</span>
-                  <span className="font-medium text-gray-800">
-                    {formatFileSize(selectedFile.size)}
-                  </span>
+                <p className="text-xs md:text-sm text-gray-600 ml-2 break-words">
+                  Files are organized by Department → Subject → Lecture order
+                </p>
+              </div>
+              
+              <div className="flex items-start">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-blue-500"></div>
                 </div>
-                {fullSequence && (
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-gray-600">Sequence:</span>
-                    <span className="font-mono font-bold text-blue-700 bg-blue-100 px-2 py-1 rounded">
-                      {fullSequence}
-                    </span>
-                  </div>
-                )}
+                <p className="text-xs md:text-sm text-gray-600 ml-2 break-words">
+                  Regular lectures (1-48) appear before Lab lectures (1-16)
+                </p>
+              </div>
+              
+              <div className="flex items-start">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-blue-500"></div>
+                </div>
+                <p className="text-xs md:text-sm text-gray-600 ml-2 break-words">
+                  Sequence format: Department_Subject_Lecture (e.g., 05_02_15)
+                </p>
+              </div>
+              
+              <div className="pt-2 md:pt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-600">Regular Lectures:</span>
+                  <span className="font-medium text-green-600">Order 1-48</span>
+                </div>
+                <div className="flex items-center justify-between text-xs mt-1">
+                  <span className="text-gray-600">Lab Lectures:</span>
+                  <span className="font-medium text-purple-600">Order 49-64</span>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Upload Button */}
-          <button
-            onClick={handleUpload}
-            disabled={uploading || !selectedFile || !fullSequence}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0"
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin mr-3" />
-                Uploading {lectureType === 'lab' ? 'Lab Material' : 'Lecture Material'}...
-              </>
-            ) : (
-              <>
-                <Upload className="h-5 w-5 mr-3" />
-                Upload {lectureType === 'lab' ? 'Lab Material' : 'Lecture Material'}
-              </>
-            )}
-          </button>
+      {/* Success Message with Countdown */}
+      {success && (
+        <div className="mt-3 md:mt-6">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-700 rounded-lg md:rounded-xl p-3 md:p-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 pt-0.5">
+                  <CheckCircle className="h-4 w-4 md:h-5 md:w-5" />
+                </div>
+                <div className="ml-2 md:ml-3 flex-1 min-w-0">
+                  <h3 className="font-medium text-sm md:text-base">Upload Successful!</h3>
+                  <p className="text-xs md:text-sm mt-0.5 md:mt-1 break-words">
+                    Your lecture material has been uploaded successfully. Redirecting to documents page...
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2 bg-green-100 px-3 py-1.5 rounded-lg">
+                <div className="animate-pulse h-2 w-2 bg-green-600 rounded-full"></div>
+                <span className="text-xs font-medium text-green-800">Redirecting...</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Error Message */}
       {error && (
-        <div className="mt-6 p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 text-red-700 rounded-xl">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <X className="h-5 w-5" />
-            </div>
-            <div className="ml-3">
-              <h3 className="font-medium">Upload Error</h3>
-              <p className="text-sm mt-1">{error}</p>
+        <div className="mt-3 md:mt-6">
+          <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 text-red-700 rounded-lg md:rounded-xl p-3 md:p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 pt-0.5">
+                <X className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              </div>
+              <div className="ml-2 md:ml-3 flex-1 min-w-0">
+                <h3 className="font-medium text-xs md:text-sm">Upload Error</h3>
+                <p className="text-xs mt-0.5 md:mt-1 break-words">{error}</p>
+              </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Information Box */}
-      <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h4 className="font-medium text-gray-700 mb-2 flex items-center">
-          <ListOrdered className="h-4 w-4 mr-2" />
-          Sequence Guidelines:
-        </h4>
-        <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-          <li><span className="font-medium">Department Order:</span> Determined by department selection order</li>
-          <li><span className="font-medium">Subject Order:</span> Determined by subject order within department</li>
-          <li><span className="font-medium">Lecture Order:</span> Regular lectures (1-48), Lab lectures (49-64)</li>
-          <li><span className="font-medium">Full Sequence:</span> Format: Department-Subject-Lecture (e.g., 05_02_15)</li>
-          <li>Files will be fetched in sequence order for easy navigation</li>
-          <li>Same sequence will be used for organizing in storage</li>
-          <li>You can filter by lecture type (Lab/Regular) in the documents list</li>
-        </ul>
-        <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-100">
-          <p className="text-sm font-medium text-blue-800">📚 Regular Lectures vs 🔬 Lab Lectures:</p>
-          <p className="text-xs text-blue-700 mt-1">
-            • Regular lectures: 1-48 (Order 1-48)
-            <br />
-            • Lab lectures: 1-16 (Order 49-64)
-            <br />
-            • Lab lectures will appear after all regular lectures in the sequence
-          </p>
-        </div>
-      </div>
     </div>
   )
 }
