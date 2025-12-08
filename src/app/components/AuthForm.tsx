@@ -15,6 +15,14 @@ export default function AuthForm() {
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
   const [showPassword, setShowPassword] = useState(false)
 
+  const toggleMode = () => {
+    setMode(mode === 'signin' ? 'signup' : 'signin')
+    setEmail('')
+    setPassword('')
+    setFullName('')
+    setMessage(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -126,6 +134,18 @@ export default function AuthForm() {
             {mode === 'signin' ? 'Sign in to your account' : 'Create your account'}
           </h2>
           
+          {/* Add mode toggle option */}
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="text-blue-600 hover:text-blue-500 font-medium"
+            >
+              {mode === 'signin' 
+                ? "Don't have an account? Sign up" 
+                : "Already have an account? Sign in"}
+            </button>
+          </div>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -267,12 +287,10 @@ export default function AuthForm() {
             </button>
           </div>
 
+          {/* Add social login buttons if needed */}
          
         </form>
 
-        <div className="mt-4 text-center text-xs text-gray-500">
-          By continuing, you agree to our Terms of Service and Privacy Policy
-        </div>
       </div>
     </div>
   )
