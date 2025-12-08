@@ -14,7 +14,6 @@ export default function AuthForm() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
   const [showPassword, setShowPassword] = useState(false)
-  const [signupSuccess, setSignupSuccess] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,7 +24,7 @@ export default function AuthForm() {
       const supabase = createClient()
 
       if (mode === 'signup') {
-        // Sign up with auto confirmation
+        // Sign up without email confirmation
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -33,8 +32,7 @@ export default function AuthForm() {
             data: {
               full_name: fullName,
             },
-            // Auto confirm for development
-            emailRedirectTo: `${window.location.origin}/auth/callback`
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         })
 
@@ -57,7 +55,6 @@ export default function AuthForm() {
 
         if (signInError) throw signInError
 
-        setSignupSuccess(true)
         setMessage({
           type: 'success',
           text: 'Account created successfully! Redirecting...'
@@ -66,36 +63,29 @@ export default function AuthForm() {
         // Redirect to home page
         setTimeout(() => {
           window.location.href = '/'
-        }, 1500)
+        }, 1000)
 
       } else {
-        // Sign in
+        // Sign in - no email confirmation check
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
 
         if (error) {
-          // Check if error is due to email not confirmed
-          if (error.message.includes('Email not confirmed')) {
-            // Resend confirmation email
-            const { error: resendError } = await supabase.auth.resend({
-              type: 'signup',
-              email,
-              options: {
-                emailRedirectTo: `${window.location.origin}/auth/callback`
-              }
-            })
-            
-            if (resendError) throw resendError
-            
+          // Check specific error cases
+          if (error.message.includes('Invalid login credentials')) {
             setMessage({
-              type: 'success',
-              text: 'Confirmation email sent! Please check your inbox.'
+              type: 'error',
+              text: 'Invalid email or password'
             })
-            return
+          } else {
+            setMessage({
+              type: 'error',
+              text: error.message || 'Login failed'
+            })
           }
-          throw error
+          return
         }
 
         // Redirect to home page
@@ -135,20 +125,7 @@ export default function AuthForm() {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             {mode === 'signin' ? 'Sign in to your account' : 'Create your account'}
           </h2>
-          {/* <p className="mt-2 text-center text-sm text-gray-600">
-            {mode === 'signin' 
-              ? "Don't have an account? "
-              : "Already have an account? "}
-            <button
-              onClick={() => {
-                setMode(mode === 'signin' ? 'signup' : 'signin')
-                setMessage(null)
-              }}
-              className="font-medium text-blue-600 hover:text-blue-500"
-            >
-              {mode === 'signin' ? 'Sign up here' : 'Sign in here'}
-            </button>
-          </p> */}
+          
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -290,20 +267,7 @@ export default function AuthForm() {
             </button>
           </div>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-50 text-gray-500">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-           
-          </div>
+         
         </form>
 
         <div className="mt-4 text-center text-xs text-gray-500">
