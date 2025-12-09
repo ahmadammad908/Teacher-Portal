@@ -135,7 +135,7 @@ export default function AuthForm() {
           </h2>
           
           {/* Add mode toggle option */}
-          <div className="mt-4 text-center">
+          {/* <div className="mt-4 text-center">
             <button
               type="button"
               onClick={toggleMode}
@@ -145,7 +145,7 @@ export default function AuthForm() {
                 ? "Don't have an account? Sign up" 
                 : "Already have an account? Sign in"}
             </button>
-          </div>
+          </div> */}
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
