@@ -142,6 +142,8 @@ export default function Navigation() {
                   <p className="hidden xs:block text-xs text-gray-500">Academic Resources</p>
                 </div>
               </Link>
+             
+
             </div>
 
             {/* Desktop Navigation - Medium screens and up */}

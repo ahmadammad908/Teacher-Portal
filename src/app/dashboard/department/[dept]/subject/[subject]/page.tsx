@@ -1,12 +1,12 @@
 // app/dashboard/department/[dept]/subject/[subject]/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '../../../../../../../lib/supabase/client'
 import { 
   Building, BookOpen, Hash, File, Download, ChevronLeft, Search, 
-  Calendar, User, Tag, Eye, ExternalLink, Filter, Clock, CheckCircle
+  Calendar, User, Tag, Eye, ExternalLink, Filter, Clock, CheckCircle, X, ArrowRight
 } from 'lucide-react'
 import PDFViewerModal from '../../../../../components/ImagePreviewModal'
 
@@ -59,12 +59,55 @@ export default function SubjectPage() {
   const [teacher, setTeacher] = useState('')
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [selectedLecture, setSelectedLecture] = useState<number | null>(null)
+  const searchRef = useRef<HTMLDivElement>(null)
+  const lectureRefs = useRef<{[key: number]: HTMLDivElement | null}>({})
 
   useEffect(() => {
     if (department && subject) {
       fetchSubjectDocuments()
     }
   }, [department, subject])
+
+  // Click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  // Scroll to selected lecture when it changes
+  useEffect(() => {
+    if (selectedLecture !== null && lectureRefs.current[selectedLecture]) {
+      const element = lectureRefs.current[selectedLecture]
+      if (element) {
+        // Smooth scroll to the element
+        setTimeout(() => {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center'
+          })
+          
+          // Highlight effect
+          element.classList.add('ring-4', 'ring-blue-400', 'ring-offset-2')
+          
+          // 3 seconds baad highlight hata dein
+          setTimeout(() => {
+            element.classList.remove('ring-4', 'ring-blue-400', 'ring-offset-2')
+            setSelectedLecture(null)
+          }, 3000)
+        }, 100)
+      }
+    }
+  }, [selectedLecture])
 
   const fetchSubjectDocuments = async () => {
     try {
@@ -121,6 +164,63 @@ export default function SubjectPage() {
     )
   )
 
+  // Generate search suggestions
+  const getSearchSuggestions = () => {
+    if (!searchTerm.trim()) return []
+    
+    const suggestions: Array<{
+      type: 'lecture' | 'filename' | 'tag';
+      text: string;
+      lectureNumber?: number;
+    }> = []
+    
+    // Lecture number suggestions
+    lectures.forEach(lecture => {
+      if (lecture.number.toString().includes(searchTerm)) {
+        suggestions.push({
+          type: 'lecture',
+          text: `Lecture ${lecture.number}`,
+          lectureNumber: lecture.number
+        })
+      }
+      
+      // File name suggestions
+      lecture.documents.forEach(doc => {
+        if (doc.file_name.toLowerCase().includes(searchTerm.toLowerCase())) {
+          suggestions.push({
+            type: 'filename',
+            text: doc.file_name,
+            lectureNumber: lecture.number
+          })
+        }
+        
+        // Tag suggestions
+        if (doc.tags) {
+          doc.tags.forEach(tag => {
+            if (tag.toLowerCase().includes(searchTerm.toLowerCase())) {
+              suggestions.push({
+                type: 'tag',
+                text: tag,
+                lectureNumber: lecture.number
+              })
+            }
+          })
+        }
+      })
+    })
+    
+    // Remove duplicates
+    const uniqueSuggestions = suggestions.filter((suggestion, index, self) =>
+      index === self.findIndex((s) => 
+        s.text === suggestion.text && s.type === suggestion.type
+      )
+    )
+    
+    return uniqueSuggestions.slice(0, 6) // Limit to 6 suggestions
+  }
+
+  const suggestions = getSearchSuggestions()
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A'
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -161,6 +261,63 @@ export default function SubjectPage() {
     return iconMap[ext || ''] || '📎'
   }
 
+  const getSuggestionIcon = (type: 'lecture' | 'filename' | 'tag') => {
+    switch (type) {
+      case 'lecture': return <Hash className="h-4 w-4 text-blue-600" />
+      case 'filename': return <File className="h-4 w-4 text-green-600" />
+      case 'tag': return <Tag className="h-4 w-4 text-purple-600" />
+      default: return <Search className="h-4 w-4 text-gray-600" />
+    }
+  }
+
+  const getSuggestionColor = (type: 'lecture' | 'filename' | 'tag') => {
+    switch (type) {
+      case 'lecture': return 'bg-blue-100'
+      case 'filename': return 'bg-green-100'
+      case 'tag': return 'bg-purple-100'
+      default: return 'bg-gray-100'
+    }
+  }
+
+  // Handle search input focus
+  const handleSearchFocus = () => {
+    if (searchTerm && suggestions.length > 0) {
+      setShowSuggestions(true)
+    }
+  }
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchTerm(value)
+    if (value.trim() && suggestions.length > 0) {
+      setShowSuggestions(true)
+    } else {
+      setShowSuggestions(false)
+    }
+  }
+
+  // Select a suggestion and scroll to lecture
+  const handleSuggestionClick = (suggestion: { type: 'lecture' | 'filename' | 'tag'; text: string; lectureNumber?: number }) => {
+    if (suggestion.lectureNumber !== undefined) {
+      setSearchTerm(suggestion.text)
+      setShowSuggestions(false)
+      setSelectedLecture(suggestion.lectureNumber)
+    }
+  }
+
+  // Clear search
+  const handleClearSearch = () => {
+    setSearchTerm('')
+    setShowSuggestions(false)
+    setSelectedLecture(null)
+  }
+
+  // Set ref for lecture card
+  const setLectureRef = (lectureNumber: number, element: HTMLDivElement | null) => {
+    lectureRefs.current[lectureNumber] = element
+  }
+
   // Check if file is previewable
   const isPreviewable = (fileType: string) => {
     if (!fileType) return false
@@ -188,7 +345,7 @@ export default function SubjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen ">
       {/* Mobile Navigation Header */}
       <div className="sticky top-0 z-50 bg-white border-b border-gray-200 lg:hidden">
         <div className="px-4 py-3">
@@ -291,19 +448,65 @@ export default function SubjectPage() {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6 lg:mb-8">
-          <div className="bg-white rounded-xl lg:rounded-2xl shadow-sm border border-gray-200 p-4">
+        {/* Search Bar with Suggestions */}
+        <div className="mb-6 lg:mb-8" ref={searchRef}>
+          <div className="bg-white rounded-xl lg:rounded-2xl shadow-sm border border-gray-200 p-4 relative">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
                 placeholder="Search lectures, files, or tags..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg lg:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all duration-200"
+                onChange={handleSearchChange}
+                onFocus={handleSearchFocus}
+                className="w-full pl-12 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-lg lg:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all duration-200"
               />
+              {searchTerm && (
+                <button
+                  onClick={handleClearSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                </button>
+              )}
             </div>
+            
+            {/* Search Suggestions */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-50 left-4 right-4 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                <div className="py-2">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Quick Suggestions
+                  </div>
+                  {suggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="w-full text-left px-4 py-3 hover:bg-blue-50 flex items-center justify-between group transition-colors duration-150 border-t border-gray-100 first:border-t-0"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-1.5 rounded ${getSuggestionColor(suggestion.type)}`}>
+                          {getSuggestionIcon(suggestion.type)}
+                        </div>
+                        <div className="text-left">
+                          <span className="text-gray-700 group-hover:text-blue-600 font-medium text-sm">
+                            {suggestion.text}
+                          </span>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {suggestion.type === 'lecture' && 'Lecture Number'}
+                            {suggestion.type === 'filename' && 'File Name'}
+                            {suggestion.type === 'tag' && 'Tag'}
+                            {suggestion.lectureNumber && ` • Lecture ${suggestion.lectureNumber}`}
+                          </div>
+                        </div>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -322,7 +525,11 @@ export default function SubjectPage() {
         <div className="space-y-4 lg:space-y-6">
           {filteredLectures.length > 0 ? (
             filteredLectures.map((lecture) => (
-              <div key={lecture.number} className="bg-white rounded-xl lg:rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div 
+                key={lecture.number} 
+                ref={(el) => setLectureRef(lecture.number, el)}
+                className={`bg-white rounded-xl lg:rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ${selectedLecture === lecture.number ? 'ring-4 ring-blue-400 ring-offset-2' : ''}`}
+              >
                 {/* Lecture Header */}
                 <div className="bg-gradient-to-r from-gray-50 to-blue-50/50 px-4 lg:px-6 py-4 border-b border-gray-100">
                   <div className="flex items-center justify-between">
@@ -536,7 +743,7 @@ export default function SubjectPage() {
                 </p>
                 {searchTerm && (
                   <button
-                    onClick={() => setSearchTerm('')}
+                    onClick={handleClearSearch}
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg lg:rounded-xl font-medium hover:bg-blue-700 transition-colors duration-200"
                   >
                     Clear Search

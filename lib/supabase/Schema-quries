@@ -1,0 +1,127 @@
+-- Documents table for storing file metadata
+CREATE TABLE IF NOT EXISTS documents (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  file_name TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  file_size BIGINT NOT NULL,
+  file_type TEXT,
+  download_url TEXT NOT NULL,
+  
+  -- Lecture information
+  teacher_name TEXT,
+  subject_name TEXT NOT NULL,
+  lecture_no TEXT NOT NULL, -- Changed from INTEGER to TEXT for "1" and "1(Lab)"
+  lecture_title TEXT NOT NULL,
+  department TEXT NOT NULL,
+  
+  -- Lecture type (regular/lab)
+  lecture_type TEXT CHECK (lecture_type IN ('regular', 'lab')) DEFAULT 'regular',
+  
+  -- Technical info
+  file_extension TEXT,
+  tags TEXT[] DEFAULT '{}',
+  uploaded_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Sequence fields for ordering
+  department_order INTEGER NOT NULL,
+  subject_order INTEGER NOT NULL,
+  lecture_order INTEGER NOT NULL,
+  semester_order INTEGER NOT NULL DEFAULT 1,
+  full_sequence TEXT NOT NULL,
+  
+  -- For search
+  searchable_text TEXT,
+  
+  -- Indexes for performance
+  CONSTRAINT unique_file_path UNIQUE(file_path)
+);
+
+-- Create indexes for fast querying
+CREATE INDEX IF NOT EXISTS idx_documents_sequence ON documents(department_order, subject_order, lecture_order);
+CREATE INDEX IF NOT EXISTS idx_documents_full_sequence ON documents(full_sequence);
+CREATE INDEX IF NOT EXISTS idx_documents_department ON documents(department);
+CREATE INDEX IF NOT EXISTS idx_documents_user_id ON documents(user_id);
+CREATE INDEX IF NOT EXISTS idx_documents_uploaded_at ON documents(uploaded_at DESC);
+
+-- New indexes for lab support
+CREATE INDEX IF NOT EXISTS idx_documents_lecture_type ON documents(lecture_type);
+CREATE INDEX IF NOT EXISTS idx_documents_tags ON documents USING GIN(tags);
+
+-- Enable Row Level Security
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+
+-- Create policies
+CREATE POLICY "Users can view their own documents"
+  ON documents FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own documents"
+  ON documents FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own documents"
+  ON documents FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own documents"
+  ON documents FOR DELETE
+  USING (auth.uid() = user_id);
+
+
+
+
+-- Storage bucket and policies for user documents
+-- 1. Create the bucket (this works – you have permission via the storage admin functions)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('documents', 'documents', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- 2. Set the bucket to be public or private as you wish
+-- true = publicly downloadable, false = only via signed URLs or RLS
+UPDATE storage.buckets 
+SET public = true 
+WHERE id = 'documents';
+
+-- 3. Enable the built-in "authenticated users can access their own folder" policies
+-- These policies already exist in every Supabase project; you only need to enable them on your bucket:
+
+-- Allow authenticated users to upload to their own folder:  documents/<user-id>/*
+CREATE POLICY "Users can upload to their own folder"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'documents'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow users to view/download their own files
+CREATE POLICY "Users can view their own files"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (
+  bucket_id = 'documents'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow users to update their own files
+CREATE POLICY "Users can update their own files"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'documents'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow users to delete their own files
+CREATE POLICY "Users can delete their own files"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'documents'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Optional: If you made the bucket public (public = true), everyone can read everything anyway.
+-- If you want the bucket private + public read access only to certain files, remove public = true
+-- and don’t create a global "Public can view files" policy unless you really want it.
