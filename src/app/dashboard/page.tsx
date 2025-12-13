@@ -57,14 +57,11 @@ export default function Dashboard() {
       setLoading(true)
       const supabase = createClient()
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      // Get all documents
+      // ✅ PUBLIC ACCESS - No authentication required
+      // Get all documents for everyone
       const { data, error } = await supabase
         .from('documents')
         .select('*')
-        .eq('user_id', user.id)
         .order('department_order', { ascending: true })
         .order('subject_order', { ascending: true })
         .order('lecture_order', { ascending: true })
@@ -237,7 +234,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-center min-h-screen ">
         <div className="text-center">
           <div className="animate-spin rounded-full h-14 w-14 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading your lecture materials...</p>
+          <p className="mt-4 text-gray-600 font-medium">Loading lecture materials...</p>
         </div>
       </div>
     )
@@ -254,7 +251,7 @@ export default function Dashboard() {
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Lecture Materials</h1>
                 <p className="text-gray-600 mt-2">
-                  Manage and organize your lecture materials by department
+                  Access and organize lecture materials by department
                 </p>
               </div>
 
@@ -273,11 +270,6 @@ export default function Dashboard() {
                     <span className="text-sm font-medium text-gray-700">{totalFiles} Files</span>
                   </div>
                 </div>
-
-                {/* <button className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
-                  <BookOpen className="h-4 w-4" />
-                  <span>Add New</span>
-                </button> */}
               </div>
             </div>
           </div>
@@ -726,12 +718,11 @@ export default function Dashboard() {
                     : 'This department currently has no lecture materials.'}
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-3 md:gap-4 px-4">
-                
-               <Link href={"/upload"}>
-                <button className="px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg md:rounded-xl hover:shadow-lg transition-all text-sm md:text-base">
-                  Upload Document
-                </button>
-               </Link>
+                <Link href={"/upload"}>
+                  <button className="px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg md:rounded-xl hover:shadow-lg transition-all text-sm md:text-base">
+                    Upload Document
+                  </button>
+                </Link>
               </div>
             </div>
           )}

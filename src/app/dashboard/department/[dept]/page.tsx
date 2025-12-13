@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '../../../../../lib/supabase/client'
-import { BookOpen, ChevronLeft, Search, User, FileText, X, ArrowRight } from 'lucide-react' // ArrowRight add kiya
+import { BookOpen, ChevronLeft, Search, User, FileText, X, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 export default function DepartmentPage() {
@@ -16,9 +16,9 @@ export default function DepartmentPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null) // New state for selected subject
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null)
   const searchRef = useRef<HTMLDivElement>(null)
-  const subjectRefs = useRef<{[key: string]: HTMLDivElement | null}>({}) // Refs for subject cards
+  const subjectRefs = useRef<{[key: string]: HTMLDivElement | null}>({})
 
   useEffect(() => {
     if (department) {
@@ -45,19 +45,16 @@ export default function DepartmentPage() {
     if (selectedSubject && subjectRefs.current[selectedSubject]) {
       const element = subjectRefs.current[selectedSubject]
       if (element) {
-        // Smooth scroll to the element
         element.scrollIntoView({ 
           behavior: 'smooth', 
-          block: 'center' // Center mein laaye element ko
+          block: 'center'
         })
         
-        // Highlight effect ke liye temporary class add karein
         element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2')
         
-        // 2 seconds baad highlight hata dein
         setTimeout(() => {
           element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2')
-          setSelectedSubject(null) // Reset selected subject
+          setSelectedSubject(null)
         }, 2000)
       }
     }
@@ -67,17 +64,19 @@ export default function DepartmentPage() {
     try {
       setLoading(true)
       const supabase = createClient()
-      
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
-      }
+
+      // ✅ REMOVED AUTHENTICATION CHECK
+      // const { data: { user } } = await supabase.auth.getUser()
+      // if (!user) {
+      //   router.push('/login')
+      //   return
+      // }
 
       const { data, error } = await supabase
         .from('documents')
         .select('*')
-        .eq('user_id', user.id)
+        // ✅ REMOVED USER ID FILTER
+        // .eq('user_id', user.id)
         .eq('department', department)
         .order('subject_order', { ascending: true })
         .order('lecture_order', { ascending: true })
@@ -97,9 +96,16 @@ export default function DepartmentPage() {
     .map(subject => {
       const subjectDocs = documents.filter(doc => doc.subject_name === subject)
       const teacher = subjectDocs[0]?.teacher_name || ''
-      const lectures = Array.from(new Set(subjectDocs.map(doc => doc.lecture_no)))
-        .filter(lecture => lecture !== null && !isNaN(lecture))
-        .sort((a, b) => a - b) as number[]
+      
+      // Convert lecture numbers properly
+      const lectures = Array.from(new Set(subjectDocs.map(doc => {
+        const lectureNo = doc.lecture_no;
+        // Handle both string and number lecture numbers
+        const num = parseInt(lectureNo);
+        return isNaN(num) ? 0 : num;
+      })))
+      .filter(lecture => lecture > 0)
+      .sort((a, b) => a - b) as number[]
       
       return {
         name: subject,
@@ -137,7 +143,7 @@ export default function DepartmentPage() {
       }
       
       // Add teacher name matches
-      if (subject.teacher.toLowerCase().includes(searchTerm.toLowerCase())) {
+      if (subject.teacher && subject.teacher.toLowerCase().includes(searchTerm.toLowerCase())) {
         suggestions.push({
           text: subject.teacher,
           type: 'teacher',
@@ -153,7 +159,7 @@ export default function DepartmentPage() {
       )
     )
     
-    return uniqueSuggestions.slice(0, 6) // Limit to 6 suggestions
+    return uniqueSuggestions.slice(0, 6)
   }
 
   const suggestions = getSearchSuggestions()
@@ -186,11 +192,8 @@ export default function DepartmentPage() {
   // Select a suggestion and scroll to subject
   const handleSuggestionClick = (suggestion: { text: string; type: 'subject' | 'teacher'; subjectName?: string }) => {
     if (suggestion.subjectName) {
-      // Set the search term to the clicked suggestion
       setSearchTerm(suggestion.text)
       setShowSuggestions(false)
-      
-      // Set selected subject to trigger scroll effect
       setSelectedSubject(suggestion.subjectName)
     }
   }

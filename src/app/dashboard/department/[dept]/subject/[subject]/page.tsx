@@ -114,16 +114,18 @@ export default function SubjectPage() {
       setLoading(true)
       const supabase = createClient()
       
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
-      }
+      // ✅ REMOVED AUTHENTICATION CHECK
+      // const { data: { user } } = await supabase.auth.getUser()
+      // if (!user) {
+      //   router.push('/login')
+      //   return
+      // }
 
       const { data, error } = await supabase
         .from('documents')
         .select('*')
-        .eq('user_id', user.id)
+        // ✅ REMOVED USER ID FILTER
+        // .eq('user_id', user.id)
         .eq('department', department)
         .eq('subject_name', subject)
         .order('lecture_order', { ascending: true })
