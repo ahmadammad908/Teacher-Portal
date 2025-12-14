@@ -6,8 +6,8 @@ import Navigation from './components/Navigation'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Document Uploader',
-  description: 'Upload and manage your documents securely',
+  title: 'CoreCMS',
+  description: 'CoreCMS is a modern, secure, and scalable content management system designed to help universities, institutes, and organizations easily manage content, users, and digital resources from a single dashboard.',
 }
 
 export default function RootLayout({

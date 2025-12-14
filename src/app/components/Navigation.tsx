@@ -103,7 +103,7 @@ export default function Navigation() {
               <div className="flex items-center space-x-3">
                 <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg animate-pulse"></div>
                 <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  DocUpload
+                  CoreCMS
                 </span>
               </div>
             </div>
@@ -137,7 +137,7 @@ export default function Navigation() {
                 </div>
                 <div>
                   <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    DocUpload
+                    CoreCMS
                   </span>
                   <p className="hidden xs:block text-xs text-gray-500">Academic Resources</p>
                 </div>
