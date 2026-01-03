@@ -6,7 +6,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '../../../../../../../lib/supabase/client'
 import { 
   Building, BookOpen, Hash, File, Download, ChevronLeft, Search, 
-  Calendar, User, Tag, Eye, ExternalLink, Filter, Clock, CheckCircle, X, ArrowRight
+  Calendar, User, Tag, Eye, ExternalLink, Filter, Clock, CheckCircle, X, ArrowRight,
+  Trash2, AlertTriangle, Edit2, MoreVertical
 } from 'lucide-react'
 import PDFViewerModal from '../../../../../components/ImagePreviewModal'
 
@@ -61,20 +62,42 @@ export default function SubjectPage() {
   const [showPreview, setShowPreview] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedLecture, setSelectedLecture] = useState<number | null>(null)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [showDropdown, setShowDropdown] = useState<string | null>(null)
   const searchRef = useRef<HTMLDivElement>(null)
   const lectureRefs = useRef<{[key: number]: HTMLDivElement | null}>({})
+  const dropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({})
 
   useEffect(() => {
+    // Fetch current user on component mount
+    const fetchCurrentUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUser(user)
+    }
+    fetchCurrentUser()
+    
     if (department && subject) {
       fetchSubjectDocuments()
     }
   }, [department, subject])
 
-  // Click outside to close suggestions
+  // Click outside to close suggestions and dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Close suggestions
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSuggestions(false)
+      }
+      
+      // Close dropdowns
+      const clickedOutsideAllDropdowns = Object.values(dropdownRefs.current).every(
+        ref => ref && !ref.contains(event.target as Node)
+      )
+      if (clickedOutsideAllDropdowns) {
+        setShowDropdown(null)
       }
     }
 
@@ -89,17 +112,14 @@ export default function SubjectPage() {
     if (selectedLecture !== null && lectureRefs.current[selectedLecture]) {
       const element = lectureRefs.current[selectedLecture]
       if (element) {
-        // Smooth scroll to the element
         setTimeout(() => {
           element.scrollIntoView({ 
             behavior: 'smooth', 
             block: 'center'
           })
           
-          // Highlight effect
           element.classList.add('ring-4', 'ring-blue-400', 'ring-offset-2')
           
-          // 3 seconds baad highlight hata dein
           setTimeout(() => {
             element.classList.remove('ring-4', 'ring-blue-400', 'ring-offset-2')
             setSelectedLecture(null)
@@ -113,19 +133,10 @@ export default function SubjectPage() {
     try {
       setLoading(true)
       const supabase = createClient()
-      
-      // ✅ REMOVED AUTHENTICATION CHECK
-      // const { data: { user } } = await supabase.auth.getUser()
-      // if (!user) {
-      //   router.push('/login')
-      //   return
-      // }
 
       const { data, error } = await supabase
         .from('documents')
         .select('*')
-        // ✅ REMOVED USER ID FILTER
-        // .eq('user_id', user.id)
         .eq('department', department)
         .eq('subject_name', subject)
         .order('lecture_order', { ascending: true })
@@ -133,7 +144,6 @@ export default function SubjectPage() {
       if (error) throw error
       setDocuments(data || [])
       
-      // Extract teacher from first document
       if (data && data.length > 0) {
         setTeacher(data[0].teacher_name || '')
       }
@@ -142,6 +152,61 @@ export default function SubjectPage() {
       console.error('Error fetching documents:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Delete a single document
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!currentUser) {
+      alert('You must be logged in to delete files.')
+      return
+    }
+
+    try {
+      setIsDeleting(documentId)
+      const supabase = createClient()
+
+      // Double-check user authentication
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        alert('Session expired. Please login again.')
+        router.push('/login')
+        return
+      }
+
+      // First, verify the user owns this document
+      const { data: document, error: fetchError } = await supabase
+        .from('documents')
+        .select('id, user_id, file_name')
+        .eq('id', documentId)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      if (!document || document.user_id !== user.id) {
+        alert('You can only delete files that you uploaded.')
+        return
+      }
+
+      // Delete the document
+      const { error: deleteError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', documentId)
+        .eq('user_id', user.id)
+
+      if (deleteError) throw deleteError
+
+      // Refresh the documents list
+      fetchSubjectDocuments()
+      setShowDeleteConfirm(null)
+      alert(`File "${document.file_name}" has been deleted successfully.`)
+      
+    } catch (error) {
+      console.error('Error deleting document:', error)
+      alert('Failed to delete file. Please try again.')
+    } finally {
+      setIsDeleting(null)
     }
   }
 
@@ -166,6 +231,12 @@ export default function SubjectPage() {
     )
   )
 
+  // Check if current user can delete a specific document
+  const canDeleteDocument = (document: Document) => {
+    if (!currentUser) return false
+    return document.user_id === currentUser.id
+  }
+
   // Generate search suggestions
   const getSearchSuggestions = () => {
     if (!searchTerm.trim()) return []
@@ -176,7 +247,6 @@ export default function SubjectPage() {
       lectureNumber?: number;
     }> = []
     
-    // Lecture number suggestions
     lectures.forEach(lecture => {
       if (lecture.number.toString().includes(searchTerm)) {
         suggestions.push({
@@ -186,7 +256,6 @@ export default function SubjectPage() {
         })
       }
       
-      // File name suggestions
       lecture.documents.forEach(doc => {
         if (doc.file_name.toLowerCase().includes(searchTerm.toLowerCase())) {
           suggestions.push({
@@ -196,7 +265,6 @@ export default function SubjectPage() {
           })
         }
         
-        // Tag suggestions
         if (doc.tags) {
           doc.tags.forEach(tag => {
             if (tag.toLowerCase().includes(searchTerm.toLowerCase())) {
@@ -211,14 +279,13 @@ export default function SubjectPage() {
       })
     })
     
-    // Remove duplicates
     const uniqueSuggestions = suggestions.filter((suggestion, index, self) =>
       index === self.findIndex((s) => 
         s.text === suggestion.text && s.type === suggestion.type
       )
     )
     
-    return uniqueSuggestions.slice(0, 6) // Limit to 6 suggestions
+    return uniqueSuggestions.slice(0, 6)
   }
 
   const suggestions = getSearchSuggestions()
@@ -320,6 +387,16 @@ export default function SubjectPage() {
     lectureRefs.current[lectureNumber] = element
   }
 
+  // Set ref for dropdown
+  const setDropdownRef = (documentId: string, element: HTMLDivElement | null) => {
+    dropdownRefs.current[documentId] = element
+  }
+
+  // Toggle dropdown
+  const toggleDropdown = (documentId: string) => {
+    setShowDropdown(showDropdown === documentId ? null : documentId)
+  }
+
   // Check if file is previewable
   const isPreviewable = (fileType: string) => {
     if (!fileType) return false
@@ -371,6 +448,11 @@ export default function SubjectPage() {
                 <span className="truncate max-w-[80px]">{teacher}</span>
               </div>
             )}
+            {currentUser && (
+              <div className="text-xs text-gray-500 truncate max-w-[100px]">
+                {currentUser.email?.split('@')[0]}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -396,6 +478,11 @@ export default function SubjectPage() {
                 <BookOpen className="h-4 w-4" />
                 <span className="font-medium">{subject}</span>
               </div>
+              {currentUser && (
+                <div className="text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
+                  Logged in as: <span className="font-medium">{currentUser.email}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -420,6 +507,12 @@ export default function SubjectPage() {
                     <Building className="h-4 w-4" />
                     <span className="text-sm font-medium">{department}</span>
                   </div>
+                  {currentUser && (
+                    <div className="flex items-center space-x-1 text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg">
+                      <User className="h-4 w-4" />
+                      <span className="text-sm font-medium">You</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -445,6 +538,12 @@ export default function SubjectPage() {
                   <Building className="h-4 w-4" />
                   <span className="text-sm font-medium">{department}</span>
                 </div>
+                {currentUser && (
+                  <div className="flex items-center space-x-2 text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg">
+                    <User className="h-4 w-4" />
+                    <span className="text-sm font-medium">Logged in as {currentUser.email}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -519,6 +618,8 @@ export default function SubjectPage() {
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <CheckCircle className="h-4 w-4 text-green-500" />
               <span>{filteredLectures.length} lecture{filteredLectures.length !== 1 ? 's' : ''}</span>
+              <span className="text-gray-400">•</span>
+              <span>{documents.length} file{documents.length !== 1 ? 's' : ''}</span>
             </div>
           </div>
         </div>
@@ -561,7 +662,7 @@ export default function SubjectPage() {
                 {/* Files List */}
                 <div className="divide-y divide-gray-100">
                   {lecture.documents.map((doc, idx) => (
-                    <div key={doc.id} className="px-4 lg:px-6 py-4 hover:bg-gray-50/50 transition-colors duration-150">
+                    <div key={doc.id} className="px-4 lg:px-6 py-4 hover:bg-gray-50/50 transition-colors duration-150 relative group">
                       {/* Mobile Layout */}
                       <div className="lg:hidden space-y-3">
                         {/* Top Row: Icon + File Name + Actions */}
@@ -574,9 +675,52 @@ export default function SubjectPage() {
                               <h4 className="font-semibold text-gray-900 text-sm mb-1 truncate">
                                 {doc.file_name}
                               </h4>
+                              {/* Show "You" badge if current user uploaded this file */}
+                              {currentUser && doc.user_id === currentUser.id && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mb-1">
+                                  You
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="flex space-x-2">
+                            {/* More Options Button Mobile - Only show if user can delete */}
+                            {currentUser && canDeleteDocument(doc) && (
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    toggleDropdown(doc.id)
+                                  }}
+                                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                  title="More options"
+                                >
+                                  <MoreVertical className="h-4 w-4 text-gray-600" />
+                                </button>
+                                
+                                {showDropdown === doc.id && (
+                                  <div 
+                                    ref={(el) => setDropdownRef(doc.id, el)}
+                                    className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
+                                  >
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        setShowDeleteConfirm(doc.id)
+                                        setShowDropdown(null)
+                                      }}
+                                      className="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      <span>Delete File</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
                             {/* Preview Button Mobile */}
                             {isPreviewable(doc.file_type) && (
                               <button
@@ -647,9 +791,17 @@ export default function SubjectPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between">
                               <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-gray-900 text-base mb-2 truncate">
-                                  {doc.file_name}
-                                </h4>
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <h4 className="font-semibold text-gray-900 text-base truncate">
+                                    {doc.file_name}
+                                  </h4>
+                                  {/* Show "You" badge if current user uploaded this file */}
+                                  {currentUser && doc.user_id === currentUser.id && (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                      You
+                                    </span>
+                                  )}
+                                </div>
                                 
                                 <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-3">
                                   <span className="flex items-center space-x-1">
@@ -688,6 +840,50 @@ export default function SubjectPage() {
                         </div>
                         
                         <div className="flex items-center space-x-2">
+                          {/* More Options Button Desktop - Only show if user can delete */}
+                          {currentUser && canDeleteDocument(doc) && (
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  toggleDropdown(doc.id)
+                                }}
+                                className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl flex items-center justify-center transition-colors duration-200"
+                                title="More options"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </button>
+                              
+                              {showDropdown === doc.id && (
+                                <div 
+                                  ref={(el) => setDropdownRef(doc.id, el)}
+                                  className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-10 overflow-hidden"
+                                >
+                                  <div className="p-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        setShowDeleteConfirm(doc.id)
+                                        setShowDropdown(null)
+                                      }}
+                                      className="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg flex items-center space-x-3 transition-colors duration-150"
+                                    >
+                                      <div className="p-1.5 bg-red-100 rounded-lg">
+                                        <Trash2 className="h-4 w-4" />
+                                      </div>
+                                      <div className="text-left">
+                                        <div className="font-medium">Delete File</div>
+                                        <div className="text-xs text-gray-500">Permanently remove this file</div>
+                                      </div>
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
                           {/* Preview Button Desktop */}
                           {isPreviewable(doc.file_type) && (
                             <button
@@ -770,6 +966,54 @@ export default function SubjectPage() {
             setSelectedDocument(null)
           }}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Delete File</h3>
+            </div>
+            
+            <p className="text-gray-600 mb-2">
+              Are you sure you want to delete this file?
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              This action cannot be undone. The file will be permanently removed from the database.
+            </p>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                disabled={isDeleting === showDeleteConfirm}
+                className="px-4 py-2.5 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteDocument(showDeleteConfirm)}
+                disabled={isDeleting === showDeleteConfirm}
+                className="px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium flex items-center space-x-2"
+              >
+                {isDeleting === showDeleteConfirm ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    <span>Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

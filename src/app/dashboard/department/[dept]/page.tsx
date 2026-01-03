@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '../../../../../lib/supabase/client'
-import { BookOpen, ChevronLeft, Search, User, FileText, X, ArrowRight } from 'lucide-react'
+import { BookOpen, ChevronLeft, Search, User, FileText, X, ArrowRight, Trash2, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 
 export default function DepartmentPage() {
@@ -17,8 +17,21 @@ export default function DepartmentPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const searchRef = useRef<HTMLDivElement>(null)
   const subjectRefs = useRef<{[key: string]: HTMLDivElement | null}>({})
+
+  // Fetch current user on component mount
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUser(user)
+    }
+    fetchCurrentUser()
+  }, [])
 
   useEffect(() => {
     if (department) {
@@ -65,18 +78,18 @@ export default function DepartmentPage() {
       setLoading(true)
       const supabase = createClient()
 
-      // ✅ REMOVED AUTHENTICATION CHECK
-      // const { data: { user } } = await supabase.auth.getUser()
-      // if (!user) {
-      //   router.push('/login')
-      //   return
-      // }
+      // First check if user is authenticated
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      // If user exists, set current user
+      if (user) {
+        setCurrentUser(user)
+      }
 
+      // Fetch documents for the department (without user filter)
       const { data, error } = await supabase
         .from('documents')
         .select('*')
-        // ✅ REMOVED USER ID FILTER
-        // .eq('user_id', user.id)
         .eq('department', department)
         .order('subject_order', { ascending: true })
         .order('lecture_order', { ascending: true })
@@ -91,16 +104,75 @@ export default function DepartmentPage() {
     }
   }
 
+  // Delete subject and all its documents
+  const handleDeleteSubject = async (subjectName: string) => {
+    if (!currentUser) {
+      alert('You must be logged in to delete subjects.')
+      return
+    }
+
+    try {
+      setIsDeleting(subjectName)
+      const supabase = createClient()
+
+      // Double-check user authentication before delete
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        alert('Session expired. Please login again.')
+        router.push('/login')
+        return
+      }
+
+      // First, fetch all documents for this subject to verify ownership
+      const { data: subjectDocs, error: fetchError } = await supabase
+        .from('documents')
+        .select('id, user_id')
+        .eq('subject_name', subjectName)
+        .eq('department', department)
+
+      if (fetchError) throw fetchError
+
+      // Check if user owns any of these documents
+      const userOwnedDocs = subjectDocs?.filter(doc => doc.user_id === user.id) || []
+      
+      if (userOwnedDocs.length === 0) {
+        alert('You can only delete subjects that you have uploaded documents to.')
+        return
+      }
+
+      // Delete all documents for this subject (only those owned by user)
+      const { error: deleteError } = await supabase
+        .from('documents')
+        .delete()
+        .in('id', userOwnedDocs.map(doc => doc.id))
+
+      if (deleteError) throw deleteError
+
+      // Refresh the documents list
+      fetchDepartmentDocuments()
+      setShowDeleteConfirm(null)
+      alert(`Subject "${subjectName}" has been deleted successfully.`)
+      
+    } catch (error) {
+      console.error('Error deleting subject:', error)
+      alert('Failed to delete subject. Please try again.')
+    } finally {
+      setIsDeleting(null)
+    }
+  }
+
   // Get unique subjects in this department
   const subjects = Array.from(new Set(documents.map(doc => doc.subject_name)))
     .map(subject => {
       const subjectDocs = documents.filter(doc => doc.subject_name === subject)
       const teacher = subjectDocs[0]?.teacher_name || ''
       
+      // Get unique user IDs who uploaded documents for this subject
+      const uploaderIds = Array.from(new Set(subjectDocs.map(doc => doc.user_id)))
+      
       // Convert lecture numbers properly
       const lectures = Array.from(new Set(subjectDocs.map(doc => {
         const lectureNo = doc.lecture_no;
-        // Handle both string and number lecture numbers
         const num = parseInt(lectureNo);
         return isNaN(num) ? 0 : num;
       })))
@@ -111,7 +183,8 @@ export default function DepartmentPage() {
         name: subject,
         teacher,
         count: subjectDocs.length,
-        lectures
+        lectures,
+        uploaderIds // Track who uploaded documents for this subject
       }
     })
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -121,6 +194,13 @@ export default function DepartmentPage() {
     subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     subject.teacher.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  // Check if current user can delete a specific subject
+  const canDeleteSubject = (subject: typeof subjects[0]) => {
+    if (!currentUser) return false
+    // User can delete if they have uploaded any document for this subject
+    return subject.uploaderIds.includes(currentUser.id)
+  }
 
   // Generate search suggestions with type
   const getSearchSuggestions = () => {
@@ -241,6 +321,11 @@ export default function DepartmentPage() {
                 </p>
               </div>
             </div>
+            {currentUser && (
+              <div className="text-sm text-gray-600">
+                Logged in as: <span className="font-medium">{currentUser.email}</span>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -375,11 +460,29 @@ export default function DepartmentPage() {
                 <div
                   key={index}
                   ref={(el) => setSubjectRef(subject.name, el)}
-                  className="transition-all duration-300"
+                  className="transition-all duration-300 relative group"
                 >
+                  {/* Delete Icon - Only show if user is logged in AND can delete this subject */}
+                  {currentUser && canDeleteSubject(subject) && (
+                    <div className="absolute top-4 right-4 z-10">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setShowDeleteConfirm(subject.name)
+                        }}
+                        className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Delete subject"
+                        aria-label={`Delete ${subject.name}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  
                   <Link 
                     href={`/dashboard/department/${encodeURIComponent(department)}/subject/${encodeURIComponent(subject.name)}`}
-                    className="block group"
+                    className="block"
                   >
                     <div className={`bg-white rounded-lg border border-gray-200 p-5 hover:border-blue-300 hover:shadow-md transition-all duration-200 h-full ${selectedSubject === subject.name ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}>
                       <div className="flex flex-col h-full">
@@ -469,6 +572,55 @@ export default function DepartmentPage() {
                       </div>
                     </div>
                   </Link>
+
+                  {/* Delete Confirmation Modal */}
+                  {showDeleteConfirm === subject.name && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                      <div className="bg-white rounded-lg max-w-md w-full p-6">
+                        <div className="flex items-center space-x-3 mb-4">
+                          <div className="p-2 bg-red-100 rounded-lg">
+                            <AlertTriangle className="h-6 w-6 text-red-600" />
+                          </div>
+                          <h3 className="text-lg font-bold text-gray-900">Delete Subject</h3>
+                        </div>
+                        
+                        <p className="text-gray-600 mb-2">
+                          Are you sure you want to delete <span className="font-semibold">"{subject.name}"</span>?
+                        </p>
+                        <p className="text-sm text-gray-500 mb-6">
+                          This will permanently delete all {subject.count} files you uploaded for this subject.
+                          Other users' files will remain unaffected.
+                        </p>
+                        
+                        <div className="flex justify-end space-x-3">
+                          <button
+                            onClick={() => setShowDeleteConfirm(null)}
+                            disabled={isDeleting === subject.name}
+                            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSubject(subject.name)}
+                            disabled={isDeleting === subject.name}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center space-x-2"
+                          >
+                            {isDeleting === subject.name ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                <span>Deleting...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 className="h-4 w-4" />
+                                <span>Delete</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

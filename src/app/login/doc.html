@@ -1,0 +1,1128 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="Hiderox Technologies – Privacy-as-a-Service agency for digital entrepreneurs. Stay private. Stay powerful." />
+    <meta name="keywords"
+        content="privacy agency, digital privacy, anonymous hosting, offshore LLC, secure communications, crypto privacy tools, burner phones, cold wallets" />
+    <meta name="author" content="Hiderox Technologies" />
+
+    <!-- Open Graph / Social Preview -->
+    <meta property="og:title" content="Hiderox – Privacy Documentation" />
+    <meta property="og:description" content="Comprehensive documentation for Hiderox privacy services and protocols." />
+    <meta property="og:image" content="https://hiderox.com/og-image.png" />
+    <meta property="og:url" content="https://hiderox.com/docs" />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/png" href="https://ik.imagekit.io/7whcdvhbv/logo.png?updatedAt=1748967270379" />
+
+    <title>Hiderox – Documentation</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dark': '#000000',
+                        'darker': '#0a0a0a',
+                        'darkest': '#050505',
+                        'neon-cyan': '#00ffff',
+                        'neon-purple': '#ff00ff',
+                        'neon-pink': '#ff0080',
+                        'hologram': 'linear-gradient(45deg, #00ffff, #ff00ff, #00ffff)',
+                    },
+                    fontFamily: {
+                        'mono': ['JetBrains Mono', 'Fira Code', 'monospace'],
+                        'display': ['Orbitron', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
+                        'slide-in': 'slideIn 1s ease-out',
+                        'fade-in': 'fadeIn 1.5s ease-out',
+                        'terminal-blink': 'terminalBlink 1s infinite',
+                        'matrix': 'matrix 20s linear infinite',
+                        'rotate-slow': 'rotateSlow 20s linear infinite',
+                        'hologram': 'hologram 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%, 100%': {
+                                boxShadow: '0 0 20px rgba(0, 255, 255, 0.5), 0 0 40px rgba(0, 255, 255, 0.3), 0 0 60px rgba(0, 255, 255, 0.1)'
+                            },
+                            '50%': {
+                                boxShadow: '0 0 30px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.5), 0 0 90px rgba(0, 255, 255, 0.3)'
+                            }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': {
+                                opacity: '1',
+                                boxShadow: '0 0 20px rgba(0, 255, 255, 0.5)'
+                            },
+                            '50%': {
+                                opacity: '0.8',
+                                boxShadow: '0 0 40px rgba(0, 255, 255, 0.8)'
+                            }
+                        },
+                        slideIn: {
+                            '0%': {
+                                opacity: '0',
+                                transform: 'translateX(-100px)'
+                            },
+                            '100%': {
+                                opacity: '1',
+                                transform: 'translateX(0)'
+                            }
+                        },
+                        fadeIn: {
+                            '0%': {
+                                opacity: '0',
+                                transform: 'translateY(30px)'
+                            },
+                            '100%': {
+                                opacity: '1',
+                                transform: 'translateY(0)'
+                            }
+                        },
+                        terminalBlink: {
+                            '0%, 100%': { opacity: '1' },
+                            '50%': { opacity: '0' }
+                        },
+                        matrix: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100vh)' }
+                        },
+                        rotateSlow: {
+                            '0%': { transform: 'rotate(0deg)' },
+                            '100%': { transform: 'rotate(360deg)' }
+                        },
+                        hologram: {
+                            '0%, 100%': {
+                                filter: 'hue-rotate(0deg) brightness(1)',
+                                transform: 'scale(1)'
+                            },
+                            '50%': {
+                                filter: 'hue-rotate(180deg) brightness(1.2)',
+                                transform: 'scale(1.05)'
+                            }
+                        }
+                    },
+                    backdropBlur: {
+                        'xl': '20px',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Custom Styles */
+        html,
+        body {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden !important;
+            position: relative;
+        }
+
+        body {
+            background: #000000;
+            overflow-x: hidden;
+        }
+
+        .cyber-grid {
+            background-image:
+                linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: matrix 20s linear infinite;
+        }
+
+        .neon-text {
+            text-shadow:
+                0 0 10px rgba(0, 255, 255, 0.8),
+                0 0 20px rgba(0, 255, 255, 0.6),
+                0 0 30px rgba(0, 255, 255, 0.4),
+                0 0 40px rgba(0, 255, 255, 0.2);
+        }
+
+        .holographic-text {
+            background: linear-gradient(45deg, #00ffff, #ff00ff, #00ffff);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: hologram 3s ease-in-out infinite;
+        }
+
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-morphism-dark {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        .terminal-cursor {
+            animation: terminalBlink 1s infinite;
+        }
+
+        .floating-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.5;
+            pointer-events: none;
+            max-width: 60vw;
+            max-height: 60vw;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .orb-cyan {
+            width: 50vw;
+            height: 50vw;
+            background: #00ffff;
+            top: 10%;
+            left: -25vw;
+        }
+
+        .orb-purple {
+            width: 40vw;
+            height: 40vw;
+            background: #ff00ff;
+            bottom: 15%;
+            right: -20vw;
+        }
+
+        .orb-pink {
+            width: 45vw;
+            height: 45vw;
+            background: #ff0080;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+
+        .data-stream {
+            position: absolute;
+            color: #00ffff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            opacity: 0.3;
+            animation: matrix 10s linear infinite;
+            white-space: nowrap;
+            max-width: 90vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .code-block {
+            max-width: 100%;
+        }
+
+
+        .nav-dock {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow:
+                0 0 30px rgba(0, 255, 255, 0.3),
+                inset 0 0 20px rgba(0, 255, 255, 0.1);
+        }
+
+        .docs-sidebar {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .docs-content {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            overflow-x: auto;
+        }
+
+        .loader-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loader-wrapper.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader-content {
+            text-align: center;
+        }
+
+        .loader-logo {
+            width: 60px;
+            height: auto;
+            animation: pulseGlow 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.8));
+        }
+
+        .loader-text {
+            color: #00ffff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            margin-top: 20px;
+            letter-spacing: 2px;
+        }
+
+        .loader-bar {
+            width: 200px;
+            height: 2px;
+            background: rgba(0, 255, 255, 0.2);
+            margin: 20px auto;
+            overflow: hidden;
+        }
+
+        .loader-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            animation: loading 2s ease-in-out infinite;
+        }
+
+        @keyframes loading {
+            0% {
+                width: 0%;
+            }
+
+            50% {
+                width: 100%;
+            }
+
+            100% {
+                width: 0%;
+            }
+        }
+
+        body {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        body.loaded {
+            opacity: 1;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 255, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 255, 0.8);
+        }
+    </style>
+</head>
+
+<body class="bg-dark text-white font-mono">
+    <!-- Animated Background -->
+    <div class="fixed inset-0 cyber-grid opacity-20"></div>
+
+    <!-- Floating Orbs -->
+    <div class="floating-orb w-96 h-96 bg-neon-cyan top-10 -left-48"></div>
+    <div class="floating-orb w-64 h-64 bg-neon-purple bottom-20 -right-32" style="animation-delay: 2s;"></div>
+    <div class="floating-orb w-80 h-80 bg-neon-pink top-1/2 left-1/2" style="animation-delay: 4s;"></div>
+
+    <!-- Data Streams -->
+    <div class="data-stream" style="top: 10%; left: 5%;">01001000 01101001 01100100 01100101 01110010 01101111 01111000
+    </div>
+    <div class="data-stream" style="top: 30%; right: 10%; animation-delay: 2s;">01010000 01110010 01101001 01110110
+        01100001 01100011 01111001</div>
+    <div class="data-stream" style="bottom: 20%; left: 15%; animation-delay: 4s;">01010011 01100101 01100011 01110101
+        01110010 01101001 01110100 01111001</div>
+
+    <!-- Loader -->
+    <div class="loader-wrapper">
+        <div class="loader-content">
+            <img class="loader-logo" src="https://ik.imagekit.io/7whcdvhbv/logo.png?updatedAt=1748967270379"
+                alt="Hiderox Logo" />
+            <div class="loader-text">INITIALIZING DOCUMENTATION</div>
+            <div class="loader-bar">
+                <div class="loader-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Dock -->
+    <nav class="fixed top-4 left-1/2 -translate-x-1/2 z-50 nav-dock
+             rounded-full px-4 sm:px-8 py-3 sm:py-4
+             w-auto lg:w-[min(96vw,72rem)]">
+    
+        <div class="flex items-center justify-between gap-4">
+    
+            <!-- Brand -->
+            <a href="/" class="flex items-center space-x-3 group shrink-0">
+                <img src="https://ik.imagekit.io/7whcdvhbv/logo.png?updatedAt=1748967270379" alt="Hiderox Logo" class="h-6 sm:h-8 w-auto
+                   filter drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]
+                   group-hover:scale-105 transition-transform duration-300" />
+    
+                <span class="text-lg sm:text-xl font-bold holographic-text
+                   group-hover:opacity-90 transition-opacity duration-300">
+                    HIDER0X
+                </span>
+            </a>
+    
+            <!-- Desktop Navigation -->
+            <div class="hidden lg:flex items-center space-x-5">
+    
+                <a href="/#about" class="nav-link">ABOUT</a>
+                <a href="/#services" class="nav-link">SERVICES</a>
+                <a href="/#pricing" class="nav-link">PRICING</a>
+                <a href="/#faq" class="nav-link">FAQ</a>
+                <a href="/#contact" class="nav-link">CONTACT</a>
+    
+                <!-- Docs -->
+                <a href="/docs.html" class="flex items-center space-x-2 glass-morphism
+                   px-4 py-2 rounded-full
+                   hover:scale-110 transition-all duration-300">
+                    <i class="fas fa-book text-neon-cyan text-sm"></i>
+                    <span class="text-sm font-semibold">DOCS</span>
+                </a>
+    
+                <!-- GitHub -->
+                <a href="https://github.com/hiderox" class="flex items-center space-x-2 glass-morphism
+                   px-4 py-2 rounded-full
+                   hover:scale-110 transition-all duration-300" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-github text-neon-cyan text-sm"></i>
+                    <span class="text-sm font-semibold">GITHUB</span>
+                </a>
+    
+            </div>
+    
+            <!-- Mobile Menu Button -->
+            <button class="lg:hidden text-white" id="mobile-menu-button">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+    
+        </div>
+    </nav>
+    
+    <!-- Mobile Menu -->
+    <div class="fixed inset-0 bg-black/90 backdrop-blur-xl z-40 hidden" id="mobile-menu">
+        <div class="flex flex-col items-center justify-center h-full space-y-6 px-6 text-center">
+    
+            <a href="/" class="text-2xl font-bold holographic-text">HOME</a>
+    
+            <a href="/#about" class="mobile-link">ABOUT</a>
+            <a href="/#services" class="mobile-link">SERVICES</a>
+            <a href="/#pricing" class="mobile-link">PRICING</a>
+            <a href="/#faq" class="mobile-link">FAQ</a>
+            <a href="/#contact" class="mobile-link">CONTACT</a>
+    
+            <a href="/docs.html" class="flex items-center space-x-3 text-neon-cyan text-xl font-bold">
+                <i class="fas fa-book"></i>
+                <span>DOCS</span>
+            </a>
+    
+            <a href="https://github.com/hiderox" target="_blank"
+                class="flex items-center space-x-3 text-gray-300 hover:text-neon-cyan text-xl transition-all">
+                <i class="fab fa-github"></i>
+                <span>GITHUB</span>
+            </a>
+    
+            <button class="text-white text-3xl mt-4" id="close-menu">
+                <i class="fas fa-times"></i>
+            </button>
+    
+        </div>
+    </div>
+    <!-- Documentation Container -->
+    <div class="flex pt-40 px-4">
+        <!-- Sidebar -->
+        <aside class="docs-sidebar w-64 lg:w-80 rounded-xl mr-4 p-6 hidden lg:block">
+            <h2 class="text-xl font-bold mb-6 text-neon-cyan">NAVIGATION</h2>
+            <ul class="space-y-2">
+                <li>
+                    <a href="#introduction" class="block py-2 px-4 rounded hover:bg-white/5 transition-colors">
+                        <i class="fas fa-home mr-2 text-neon-cyan"></i> Introduction
+                    </a>
+                </li>
+                <li>
+                    <a href="#getting-started" class="block py-2 px-4 rounded hover:bg-white/5 transition-colors">
+                        <i class="fas fa-rocket mr-2 text-neon-cyan"></i> Getting Started
+                    </a>
+                </li>
+                <li>
+                    <a href="#personal-privacy" class="block py-2 px-4 rounded hover:bg-white/5 transition-colors">
+                        <i class="fas fa-user-shield mr-2 text-neon-cyan"></i> Personal Privacy
+                    </a>
+                </li>
+                <li>
+                    <a href="#business-privacy" class="block py-2 px-4 rounded hover:bg-white/5 transition-colors">
+                        <i class="fas fa-building mr-2 text-neon-cyan"></i> Business Privacy
+                    </a>
+                </li>
+                <li>
+                    <a href="#elite-privacy" class="block py-2 px-4 rounded hover:bg-white/5 transition-colors">
+                        <i class="fas fa-user-ninja mr-2 text-neon-cyan"></i> Elite Shadow
+                    </a>
+                </li>
+                <li>
+                    <a href="#technical-specs" class="block py-2 px-4 rounded hover:bg-white/5 transition-colors">
+                        <i class="fas fa-cog mr-2 text-neon-cyan"></i> Technical Specs
+                    </a>
+                </li>
+                <li>
+                    <a href="#security-protocols" class="block py-2 px-4 rounded hover:bg-white/5 transition-colors">
+                        <i class="fas fa-lock mr-2 text-neon-cyan"></i> Security Protocols
+                    </a>
+                </li>
+                <li>
+                    <a href="#api-reference" class="block py-2 px-4 rounded hover:bg-white/5 transition-colors">
+                        <i class="fas fa-code mr-2 text-neon-cyan"></i> API Reference
+                    </a>
+                </li>
+                <li>
+                    <a href="#troubleshooting" class="block py-2 px-4 rounded hover:bg-white/5 transition-colors">
+                        <i class="fas fa-wrench mr-2 text-neon-cyan"></i> Troubleshooting
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="docs-content flex-1 rounded-xl p-8">
+            <div class="max-w-4xl">
+                <h1 class="text-4xl md:text-5xl font-black mb-8 font-display">
+                    <span class="holographic-text">HIDER0X DOCUMENTATION</span>
+                </h1>
+
+                <!-- Introduction Section -->
+                <section id="introduction" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6 text-neon-cyan">INTRODUCTION</h2>
+                    <div class="glass-morphism rounded-xl p-6 mb-6">
+                        <p class="text-lg text-gray-300 mb-4">
+                            Welcome to the Hiderox Documentation. This comprehensive guide covers our
+                            privacy-as-a-service offerings, technical specifications, and implementation protocols for
+                            maintaining digital anonymity in an increasingly surveilled world.
+                        </p>
+                        <p class="text-lg text-gray-300">
+                            Our solutions are designed for individuals and organizations who require maximum privacy
+                            protection without compromising on functionality or security. Whether you're a content
+                            creator, crypto entrepreneur, activist, or business operating in sensitive domains, our
+                            documentation will guide you through implementing our privacy infrastructure.
+                        </p>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-6 mb-6">
+                        <div class="glass-morphism-dark rounded-xl p-6">
+                            <i class="fas fa-shield-alt text-3xl text-neon-cyan mb-4"></i>
+                            <h3 class="text-xl font-bold mb-2">Zero-Knowledge</h3>
+                            <p class="text-gray-400">Our infrastructure operates on zero-knowledge principles, ensuring
+                                no data retention or traceability.</p>
+                        </div>
+                        <div class="glass-morphism-dark rounded-xl p-6">
+                            <i class="fas fa-user-secret text-3xl text-neon-purple mb-4"></i>
+                            <h3 class="text-xl font-bold mb-2">Complete Anonymity</h3>
+                            <p class="text-gray-400">From communication to financial transactions, we provide end-to-end
+                                anonymity solutions.</p>
+                        </div>
+                        <div class="glass-morphism-dark rounded-xl p-6">
+                            <i class="fas fa-globe text-3xl text-neon-pink mb-4"></i>
+                            <h3 class="text-xl font-bold mb-2">Global Jurisdictions</h3>
+                            <p class="text-gray-400">Leveraging privacy-friendly jurisdictions worldwide for maximum
+                                legal protection.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Getting Started Section -->
+                <section id="getting-started" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6 text-neon-cyan">GETTING STARTED</h2>
+                    <div class="glass-morphism rounded-xl p-6 mb-6">
+                        <p class="text-lg text-gray-300 mb-4">
+                            Begin your privacy journey with our streamlined onboarding process. Follow these steps to
+                            initiate your privacy protocol:
+                        </p>
+
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-4">
+                                <div
+                                    class="w-8 h-8 bg-neon-cyan rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span class="text-black font-bold">1</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold mb-2">Consultation</h3>
+                                    <p class="text-gray-400">Schedule a confidential consultation to assess your privacy
+                                        requirements and threat model.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start space-x-4">
+                                <div
+                                    class="w-8 h-8 bg-neon-purple rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span class="text-black font-bold">2</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold mb-2">Solution Design</h3>
+                                    <p class="text-gray-400">Our architects design a custom privacy solution tailored to
+                                        your specific needs.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start space-x-4">
+                                <div
+                                    class="w-8 h-8 bg-neon-pink rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span class="text-black font-bold">3</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold mb-2">Implementation</h3>
+                                    <p class="text-gray-400">Our team implements the solution with comprehensive
+                                        training and documentation.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start space-x-4">
+                                <div
+                                    class="w-8 h-8 bg-gradient-to-r from-neon-cyan to-neon-purple rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span class="text-black font-bold">4</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold mb-2">Ongoing Support</h3>
+                                    <p class="text-gray-400">Continuous monitoring, updates, and support to maintain
+                                        your privacy posture.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Personal Privacy Section -->
+                <section id="personal-privacy" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6 text-neon-cyan">PERSONAL PRIVACY</h2>
+                    <div class="glass-morphism rounded-xl p-6 mb-6">
+                        <p class="text-lg text-gray-300 mb-4">
+                            Our Personal Privacy tier provides comprehensive digital protection for individuals seeking
+                            to enhance their personal security and anonymity.
+                        </p>
+
+                        <div class="grid md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-cyan">Features</h3>
+                                <ul class="space-y-2">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-cyan mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Encrypted communication setup</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-cyan mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Device hardening protocols</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-cyan mt-1 mr-3"></i>
+                                        <span class="text-gray-300">VPN & browser security</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-cyan mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Burner device configuration</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-cyan mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Basic OPSEC training</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-cyan">Technical Specifications</h3>
+                                <ul class="space-y-2">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-cog text-neon-cyan mt-1 mr-3"></i>
+                                        <span class="text-gray-300">AES-256 encryption for all communications</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-cog text-neon-cyan mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Multi-hop VPN with obfuscation</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-cog text-neon-cyan mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Hardened Firefox/Tor Browser configuration</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-cog text-neon-cyan mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Secure email with PGP integration</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="flex items-center mb-2">
+                                <span class="text-neon-cyan mr-2">$</span>
+                                <span class="text-gray-300">./setup_personal_privacy.sh</span>
+                            </div>
+                            <pre class="text-gray-400"><code>Initializing personal privacy protocol...
+[+] Configuring encrypted communications...
+[+] Hardening device security...
+[+] Setting up VPN tunnels...
+[+] Installing privacy-focused applications...
+[✓] Personal privacy setup complete</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Business Privacy Section -->
+                <section id="business-privacy" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6 text-neon-cyan">BUSINESS PRIVACY</h2>
+                    <div class="glass-morphism rounded-xl p-6 mb-6">
+                        <p class="text-lg text-gray-300 mb-4">
+                            Our Business Privacy tier offers enterprise-grade anonymity solutions for organizations
+                            requiring comprehensive protection of operational data, finances, and communications.
+                        </p>
+
+                        <div class="grid md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-purple">Features</h3>
+                                <ul class="space-y-2">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-purple mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Anonymous entity formation</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-purple mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Virtual office infrastructure</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-purple mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Crypto payment integration</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-purple mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Advanced OPSEC blueprint</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-purple mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Multi-channel encrypted comms</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-purple">Technical Specifications</h3>
+                                <ul class="space-y-2">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-cog text-neon-purple mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Zero-knowledge architecture</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-cog text-neon-purple mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Distributed infrastructure across 5+
+                                            jurisdictions</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-cog text-neon-purple mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Privacy coin payment processing</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-cog text-neon-purple mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Self-destructing communication protocols</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="flex items-center mb-2">
+                                <span class="text-neon-purple mr-2">$</span>
+                                <span class="text-gray-300">./setup_business_privacy.sh</span>
+                            </div>
+                            <pre class="text-gray-400"><code>Initializing business privacy protocol...
+[+] Establishing anonymous entities...
+[+] Configuring virtual office infrastructure...
+[+] Setting up crypto payment gateways...
+[+] Deploying encrypted communication channels...
+[✓] Business privacy setup complete</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Elite Privacy Section -->
+                <section id="elite-privacy" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6 text-neon-cyan">ELITE SHADOW</h2>
+                    <div class="glass-morphism rounded-xl p-6 mb-6">
+                        <p class="text-lg text-gray-300 mb-4">
+                            Our Elite Shadow tier provides the most advanced privacy solutions for high-value targets,
+                            critical infrastructure, and ultra-sensitive operations requiring maximum protection.
+                        </p>
+
+                        <div class="grid md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-pink">Features</h3>
+                                <ul class="space-y-2">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-pink mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Advanced asset protection</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-pink mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Custom multi-sig wallets</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-pink mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Air-gapped cold storage</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-pink mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Complete business infrastructure</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-neon-pink mt-1 mr-3"></i>
+                                        <span class="text-gray-300">24/7 security monitoring</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-pink">Technical Specifications</h3>
+                                <ul class="space-y-2">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-cog text-neon-pink mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Quantum-resistant encryption</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-cog text-neon-pink mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Distributed HSM infrastructure</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-cog text-neon-pink mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Physical dead drop communication</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-cog text-neon-pink mt-1 mr-3"></i>
+                                        <span class="text-gray-300">Extraction protocols</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="flex items-center mb-2">
+                                <span class="text-neon-pink mr-2">$</span>
+                                <span class="text-gray-300">./setup_elite_shadow.sh</span>
+                            </div>
+                            <pre class="text-gray-400"><code>Initializing elite shadow protocol...
+[+] Deploying quantum-resistant encryption...
+[+] Establishing air-gapped infrastructure...
+[+] Configuring extraction protocols...
+[+] Setting up dead drop communication...
+[✓] Elite shadow setup complete</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Technical Specs Section -->
+                <section id="technical-specs" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6 text-neon-cyan">TECHNICAL SPECIFICATIONS</h2>
+                    <div class="glass-morphism rounded-xl p-6 mb-6">
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-cyan">Encryption Standards</h3>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left">
+                                        <thead>
+                                            <tr class="border-b border-gray-700">
+                                                <th class="pb-2 text-neon-cyan">Protocol</th>
+                                                <th class="pb-2 text-neon-cyan">Key Size</th>
+                                                <th class="pb-2 text-neon-cyan">Use Case</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr class="border-b border-gray-800">
+                                                <td class="py-2">AES-256</td>
+                                                <td class="py-2">256-bit</td>
+                                                <td class="py-2">Data at rest</td>
+                                            </tr>
+                                            <tr class="border-b border-gray-800">
+                                                <td class="py-2">RSA-4096</td>
+                                                <td class="py-2">4096-bit</td>
+                                                <td class="py-2">Key exchange</td>
+                                            </tr>
+                                            <tr class="border-b border-gray-800">
+                                                <td class="py-2">Curve25519</td>
+                                                <td class="py-2">256-bit</td>
+                                                <td class="py-2">ECDH</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="py-2">Post-Quantum</td>
+                                                <td class="py-2">Variable</td>
+                                                <td class="py-2">Future-proofing</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-cyan">Network Infrastructure</h3>
+                                <div class="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 class="text-lg font-bold mb-2 text-neon-purple">VPN Configuration</h4>
+                                        <ul class="space-y-2 text-gray-300">
+                                            <li>• Multi-hop routing (5+ hops)</li>
+                                            <li>• Obfuscation protocols</li>
+                                            <li>• DNS leak protection</li>
+                                            <li>• Kill switch implementation</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-bold mb-2 text-neon-purple">Tor Configuration</h4>
+                                        <ul class="space-y-2 text-gray-300">
+                                            <li>• Custom guard nodes</li>
+                                            <li>• Bridge relays</li>
+                                            <li>• Pluggable transports</li>
+                                            <li>• Meek obfuscation</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Security Protocols Section -->
+                <section id="security-protocols" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6 text-neon-cyan">SECURITY PROTOCOLS</h2>
+                    <div class="glass-morphism rounded-xl p-6 mb-6">
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-cyan">Operational Security (OPSEC)</h3>
+                                <p class="text-gray-300 mb-4">Our OPSEC protocols are designed to minimize digital
+                                    footprint and maximize operational security:</p>
+                                <ul class="space-y-2 text-gray-300">
+                                    <li>• Compartmentalization of activities</li>
+                                    <li>• Temporal separation of operations</li>
+                                    <li>• Digital hygiene practices</li>
+                                    <li>• Threat modeling and mitigation</li>
+                                    <li>• Counter-surveillance techniques</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-cyan">Incident Response</h3>
+                                <p class="text-gray-300 mb-4">Our incident response protocols ensure rapid containment
+                                    and recovery:</p>
+                                <ul class="space-y-2 text-gray-300">
+                                    <li>• Immediate isolation procedures</li>
+                                    <li>• Forensic analysis capabilities</li>
+                                    <li>• Containment strategies</li>
+                                    <li>• Recovery protocols</li>
+                                    <li>• Post-incident analysis</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- API Reference Section -->
+                <section id="api-reference" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6 text-neon-cyan">API REFERENCE</h2>
+                    <div class="glass-morphism rounded-xl p-6 mb-6">
+                        <p class="text-gray-300 mb-6">Our RESTful API provides programmatic access to Hiderox services:
+                        </p>
+
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-cyan">Authentication</h3>
+                                <div class="code-block">
+                                    <pre class="text-gray-400"><code>curl -X POST "https://api.hiderox.com/auth" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "api_key": "your_api_key",
+    "timestamp": "current_timestamp",
+    "signature": "generated_signature"
+  }'</code></pre>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-cyan">Create Privacy Session</h3>
+                                <div class="code-block">
+                                    <pre class="text-gray-400"><code>curl -X POST "https://api.hiderox.com/session" \
+  -H "Authorization: Bearer your_access_token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tier": "business",
+    "duration": "30d",
+    "services": ["vpn", "email", "storage"]
+  }'</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Troubleshooting Section -->
+                <section id="troubleshooting" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6 text-neon-cyan">TROUBLESHOOTING</h2>
+                    <div class="glass-morphism rounded-xl p-6 mb-6">
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-cyan">Common Issues</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <h4 class="text-lg font-bold mb-2 text-neon-purple">Connection Drops</h4>
+                                        <p class="text-gray-300 mb-2">If experiencing frequent connection drops:</p>
+                                        <ul class="space-y-1 text-gray-400">
+                                            <li>• Check network stability</li>
+                                            <li>• Try different protocol</li>
+                                            <li>• Verify server load</li>
+                                            <li>• Update client software</li>
+                                        </ul>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="text-lg font-bold mb-2 text-neon-purple">Slow Performance</h4>
+                                        <p class="text-gray-300 mb-2">If experiencing slow performance:</p>
+                                        <ul class="space-y-1 text-gray-400">
+                                            <li>• Check latency to servers</li>
+                                            <li>• Try different server location</li>
+                                            <li>• Disable unnecessary features</li>
+                                            <li>• Check device resources</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-neon-cyan">Support Channels</h3>
+                                <div class="grid md:grid-cols-3 gap-6">
+                                    <div class="text-center">
+                                        <i class="fas fa-envelope text-3xl text-neon-cyan mb-4"></i>
+                                        <h4 class="text-lg font-bold mb-2">Encrypted Email</h4>
+                                        <p class="text-gray-400"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="1a73747c755a72737e7f68756234797577">[email&#160;protected]</a></p>
+                                    </div>
+                                    <div class="text-center">
+                                        <i class="fab fa-telegram text-3xl text-neon-purple mb-4"></i>
+                                        <h4 class="text-lg font-bold mb-2">Telegram</h4>
+                                        <p class="text-gray-400">@hiderox</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <i class="fas fa-phone text-3xl text-neon-pink mb-4"></i>
+                                        <h4 class="text-lg font-bold mb-2">Emergency - WhatsApp</h4>
+                                        <p class="text-gray-400">+44 7598 820751</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const closeMenu = document.getElementById('close-menu');
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.remove('hidden');
+        });
+
+        closeMenu.addEventListener('click', () => {
+            mobileMenu.classList.add('hidden');
+        });
+
+        // Close mobile menu when clicking links
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+        // Smooth scroll for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Loader fade out
+        window.addEventListener('load', function () {
+            document.body.classList.add('loaded');
+
+            setTimeout(function () {
+                const loader = document.querySelector('.loader-wrapper');
+                if (loader) {
+                    loader.classList.add('fade-out');
+
+                    loader.addEventListener('transitionend', function () {
+                        loader.remove();
+                    });
+                }
+            }, 2000);
+        });
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"73d28c6b3fa84cd481b382b3a05fab59","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+
+</html>

@@ -1,7 +1,7 @@
 // app/dashboard/page.tsx
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '../../../lib/supabase/client'
 import { Building, Search, ChevronRight, FileText, FolderOpen, BookOpen, Calendar, Users, ChevronDown, X } from 'lucide-react'
 import Link from 'next/link'
@@ -30,229 +30,347 @@ export default function Dashboard() {
   const [isSelectOpen, setIsSelectOpen] = useState(false)
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
+  const [totalCount, setTotalCount] = useState<number>(0)
+  const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0 })
   
   const searchRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Fetch all documents with pagination
+  const fetchAllDocuments = useCallback(async () => {
+    try {
+      setLoading(true);
+      setLoadingProgress({ current: 0, total: 0 });
+      
+      const supabase = createClient();
+
+      console.log('Starting to fetch all documents...');
+
+      // First, get total count
+      const { count, error: countError } = await supabase
+        .from('documents')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        console.error('Error counting documents:', countError);
+      } else {
+        console.log(`Total documents in database: ${count}`);
+        setTotalCount(count || 0);
+        setLoadingProgress({ current: 0, total: count || 0 });
+      }
+
+      // Fetch all documents with pagination
+      let allDocuments: any[] = [];
+      let start = 0;
+      const pageSize = 1000; // Supabase max per request
+      let hasMore = true;
+
+      while (hasMore) {
+        console.log(`Fetching documents ${start + 1} to ${start + pageSize}...`);
+
+        const { data, error } = await supabase
+          .from('documents')
+          .select('*')
+          .order('department_order', { ascending: true })
+          .order('subject_order', { ascending: true })
+          .order('lecture_order', { ascending: true })
+          .range(start, start + pageSize - 1);
+
+        if (error) {
+          console.error('Error fetching documents:', error);
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allDocuments = [...allDocuments, ...data];
+          start += pageSize;
+          
+          // Update progress
+          setLoadingProgress({ 
+            current: allDocuments.length, 
+            total: count || allDocuments.length + pageSize 
+          });
+
+          console.log(`Fetched ${data.length} documents, total so far: ${allDocuments.length}`);
+
+          // If we got less than pageSize, it's the last page
+          if (data.length < pageSize) {
+            hasMore = false;
+            console.log(`Last batch received: ${data.length} documents`);
+          }
+        } else {
+          hasMore = false;
+        }
+
+        // Small delay to prevent overwhelming
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      console.log(`✅ Total loaded: ${allDocuments.length} documents`);
+      setDocuments(allDocuments);
+
+      // Calculate department stats
+      const stats: Record<string, number> = {};
+      allDocuments.forEach(doc => {
+        stats[doc.department] = (stats[doc.department] || 0) + 1;
+      });
+      setDepartmentStats(stats);
+
+      // Log department-wise counts for debugging
+      console.log('Department stats:');
+      Object.entries(stats).forEach(([dept, count]) => {
+        console.log(`${dept}: ${count} files`);
+      });
+
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+    } finally {
+      setLoading(false);
+      setLoadingProgress({ current: 0, total: 0 });
+    }
+  }, []);
+
   useEffect(() => {
-    fetchDocuments()
-  }, [])
+    fetchAllDocuments();
+  }, [fetchAllDocuments]);
 
   useEffect(() => {
     // Close search suggestions when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowSearchSuggestions(false)
+        setShowSearchSuggestions(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
-
-  const fetchDocuments = async () => {
-    try {
-      setLoading(true)
-      const supabase = createClient()
-
-      // ✅ PUBLIC ACCESS - No authentication required
-      // Get all documents for everyone
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .order('department_order', { ascending: true })
-        .order('subject_order', { ascending: true })
-        .order('lecture_order', { ascending: true })
-
-      if (error) throw error
-
-      setDocuments(data || [])
-
-      // Calculate department stats
-      const stats: Record<string, number> = {}
-      data?.forEach(doc => {
-        stats[doc.department] = (stats[doc.department] || 0) + 1
-      })
-      setDepartmentStats(stats)
-
-    } catch (error) {
-      console.error('Error fetching documents:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Get unique departments
   const departments = Array.from(new Set(documents.map(doc => doc.department)))
     .sort((a, b) => {
-      const deptA = DEPARTMENT_CATEGORIES.find(d => d.id === a)
-      const deptB = DEPARTMENT_CATEGORIES.find(d => d.id === b)
-      return (deptA?.order || 0) - (deptB?.order || 0)
-    })
+      const deptA = DEPARTMENT_CATEGORIES.find(d => d.id === a);
+      const deptB = DEPARTMENT_CATEGORIES.find(d => d.id === b);
+      return (deptA?.order || 0) - (deptB?.order || 0);
+    });
 
   // Filter departments based on search and selected department
   const filteredDepartments = departments.filter(dept => {
-    const matchesSearch = dept.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesSelected = selectedDepartment === 'all' || dept === selectedDepartment
-    return matchesSearch && matchesSelected
-  })
+    const matchesSearch = dept.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSelected = selectedDepartment === 'all' || dept === selectedDepartment;
+    return matchesSearch && matchesSelected;
+  });
 
   // Get search suggestions
   const searchSuggestions = departments.filter(dept => 
     dept.toLowerCase().includes(searchTerm.toLowerCase())
-  ).slice(0, 5) // Limit to 5 suggestions
+  ).slice(0, 5); // Limit to 5 suggestions
 
   // Get departments with files
-  const departmentsWithFiles = departments.filter(dept => departmentStats[dept] > 0)
+  const departmentsWithFiles = departments.filter(dept => departmentStats[dept] > 0);
 
   // Statistics calculations
-  const totalFiles = documents.length
-  const totalSubjects = new Set(documents.map(doc => doc.subject_name)).size
-  const totalDepartments = departments.length
+  const totalFiles = documents.length;
+  const totalSubjects = new Set(documents.map(doc => doc.subject_name)).size;
+  const totalDepartments = departments.length;
 
   // Format date properly
   const formatDate = (dateString: string | Date | null | undefined) => {
-    if (!dateString) return 'No recent files'
+    if (!dateString) return 'No recent files';
     
     try {
-      const date = new Date(dateString)
-      if (isNaN(date.getTime())) return 'Invalid date'
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid date';
       
       return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric'
-      })
+      });
     } catch (error) {
-      return 'Invalid date'
+      return 'Invalid date';
     }
-  }
+  };
 
   // Get latest date for a department
   const getLatestDepartmentDate = (department: string) => {
-    const departmentDocs = documents.filter(doc => doc.department === department)
+    const departmentDocs = documents.filter(doc => doc.department === department);
     
-    if (departmentDocs.length === 0) return null
+    if (departmentDocs.length === 0) return null;
     
     // Find the latest date from created_at or updated_at
-    let latestDate: number | Date | null = null
+    let latestDate: Date | null = null;
     departmentDocs.forEach(doc => {
-      const docDate = doc.updated_at || doc.created_at
+      const docDate = doc.updated_at || doc.uploaded_at || doc.created_at;
       if (docDate) {
-        const date = new Date(docDate)
+        const date = new Date(docDate);
         if (!latestDate || date > latestDate) {
-          latestDate = date
+          latestDate = date;
         }
       }
-    })
+    });
     
-    return latestDate
-  }
+    return latestDate;
+  };
 
   // Handle department selection from dropdown
   const handleDepartmentSelect = (deptId: string) => {
-    setSelectedDepartment(deptId)
-    setIsSelectOpen(false)
+    setSelectedDepartment(deptId);
+    setIsSelectOpen(false);
     // Clear search when selecting a specific department
     if (deptId !== 'all') {
-      setSearchTerm('')
+      setSearchTerm('');
     }
-  }
+  };
 
   // Handle search suggestion click
   const handleSearchSuggestionClick = (department: string) => {
-    setSelectedDepartment(department)
-    setSearchTerm('')
-    setShowSearchSuggestions(false)
+    setSelectedDepartment(department);
+    setSearchTerm('');
+    setShowSearchSuggestions(false);
     
     // Scroll to the selected department
     setTimeout(() => {
-      const element = document.getElementById(`department-${department}`)
+      const element = document.getElementById(`department-${department}`);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2')
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
         setTimeout(() => {
-          element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2')
-        }, 2000)
+          element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+        }, 2000);
       }
-    }, 100)
-  }
+    }, 100);
+  };
 
   // Get display name for selected department
   const getSelectedDepartmentName = () => {
-    if (selectedDepartment === 'all') return 'All Departments'
-    const deptInfo = DEPARTMENT_CATEGORIES.find(d => d.id === selectedDepartment)
-    return deptInfo?.name || selectedDepartment
-  }
+    if (selectedDepartment === 'all') return 'All Departments';
+    const deptInfo = DEPARTMENT_CATEGORIES.find(d => d.id === selectedDepartment);
+    return deptInfo?.name || selectedDepartment;
+  };
 
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setSearchTerm(value)
+    const value = e.target.value;
+    setSearchTerm(value);
     
     if (value.length > 0) {
-      setShowSearchSuggestions(true)
+      setShowSearchSuggestions(true);
     } else {
-      setShowSearchSuggestions(false)
-      setSelectedDepartment('all')
+      setShowSearchSuggestions(false);
+      setSelectedDepartment('all');
     }
-  }
+  };
 
   // Clear search
   const clearSearch = () => {
-    setSearchTerm('')
-    setSelectedDepartment('all')
-    setShowSearchSuggestions(false)
+    setSearchTerm('');
+    setSelectedDepartment('all');
+    setShowSearchSuggestions(false);
     if (inputRef.current) {
-      inputRef.current.focus()
+      inputRef.current.focus();
     }
-  }
+  };
 
   // Handle search input focus
   const handleSearchFocus = () => {
-    setSearchFocused(true)
+    setSearchFocused(true);
     if (searchTerm.length > 0) {
-      setShowSearchSuggestions(true)
+      setShowSearchSuggestions(true);
     }
-  }
+  };
 
   // Handle search input blur
   const handleSearchBlur = () => {
-    setSearchFocused(false)
+    setSearchFocused(false);
     // Delay hiding suggestions to allow for click
     setTimeout(() => {
       if (!searchFocused) {
-        setShowSearchSuggestions(false)
+        setShowSearchSuggestions(false);
       }
-    }, 200)
-  }
+    }, 200);
+  };
+
+  // Refresh data function
+  const handleRefresh = async () => {
+    await fetchAllDocuments();
+  };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen ">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-14 w-14 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading lecture materials...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center max-w-md mx-auto">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-20 w-20 border-b-2 border-blue-600 mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <FileText className="h-8 w-8 text-blue-500 animate-pulse" />
+            </div>
+          </div>
+          
+          <p className="mt-6 text-lg font-medium text-gray-700">Loading lecture materials...</p>
+          
+          {loadingProgress.total > 0 && (
+            <div className="mt-4 space-y-2">
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Loading documents...</span>
+                <span>{loadingProgress.current} / {loadingProgress.total}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ 
+                    width: `${loadingProgress.total > 0 ? (loadingProgress.current / loadingProgress.total) * 100 : 0}%` 
+                  }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Please wait while we load all {totalCount || 'your'} lecture materials
+              </p>
+            </div>
+          )}
+          
+          <button
+            onClick={handleRefresh}
+            className="mt-6 px-4 py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+          >
+            Click here if loading takes too long
+          </button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <>
       {/* Add viewport meta tag to prevent zoom */}
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-gray-50">
         {/* Header with Stats */}
-        <div className="">
+        <div className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Lecture Materials</h1>
-                <p className="text-gray-600 mt-2">
-                  Access and organize lecture materials by department
-                </p>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-3xl font-bold text-gray-900">Lecture Materials</h1>
+                  <button
+                    onClick={handleRefresh}
+                    className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                  >
+                    <span>🔄</span>
+                    Refresh
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <p className="text-gray-600">
+                    Access and organize lecture materials by department
+                  </p>
+                  {totalCount > 0 && (
+                    <span className="text-sm font-medium bg-green-100 text-green-800 px-2 py-1 rounded">
+                      {totalCount} total files
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="mt-4 lg:mt-0 flex items-center space-x-4">
@@ -303,6 +421,11 @@ export default function Dashboard() {
                 <div>
                   <p className="text-purple-100 text-xs md:text-sm font-medium">Total Files</p>
                   <p className="text-2xl md:text-3xl font-bold mt-1 md:mt-2">{totalFiles}</p>
+                  {totalCount > 0 && totalFiles < totalCount && (
+                    <p className="text-purple-200 text-xs mt-1">
+                      Showing {totalFiles} of {totalCount}
+                    </p>
+                  )}
                 </div>
                 <FileText className="h-8 w-8 md:h-12 md:w-12 opacity-80" />
               </div>
@@ -360,7 +483,7 @@ export default function Dashboard() {
                             Departments ({searchSuggestions.length})
                           </div>
                           {searchSuggestions.map((department) => {
-                            const fileCount = departmentStats[department] || 0
+                            const fileCount = departmentStats[department] || 0;
                             return (
                               <button
                                 key={department}
@@ -380,7 +503,7 @@ export default function Dashboard() {
                                   <ChevronRight className="h-3 w-3 md:h-4 md:w-4 text-gray-400 group-hover:text-blue-500 transition-colors flex-shrink-0" />
                                 </div>
                               </button>
-                            )
+                            );
                           })}
                         </div>
                       </div>
@@ -461,9 +584,9 @@ export default function Dashboard() {
 
                           {/* Department Options */}
                           {departments.map((department) => {
-                            const deptInfo = DEPARTMENT_CATEGORIES.find(d => d.id === department)
-                            const fileCount = departmentStats[department] || 0
-                            const isSelected = selectedDepartment === department
+                            const deptInfo = DEPARTMENT_CATEGORIES.find(d => d.id === department);
+                            const fileCount = departmentStats[department] || 0;
+                            const isSelected = selectedDepartment === department;
 
                             return (
                               <div
@@ -490,7 +613,7 @@ export default function Dashboard() {
                                   {fileCount} file{fileCount !== 1 ? 's' : ''}
                                 </span>
                               </div>
-                            )
+                            );
                           })}
 
                           {/* Empty State */}
@@ -514,6 +637,11 @@ export default function Dashboard() {
                 <span className="font-medium">{filteredDepartments.length} departments showing</span>
                 <span className="text-gray-400">•</span>
                 <span>{totalFiles} total lecture files</span>
+                {totalCount > 0 && totalFiles < totalCount && (
+                  <span className="text-amber-600 font-medium">
+                    (Showing {totalFiles} of {totalCount})
+                  </span>
+                )}
               </div>
 
               {selectedDepartment !== 'all' && (
@@ -558,22 +686,30 @@ export default function Dashboard() {
                   </span>
                 </h2>
 
-                {selectedDepartment !== 'all' && (
+                <div className="flex items-center gap-3">
+                  {selectedDepartment !== 'all' && (
+                    <button
+                      onClick={() => handleDepartmentSelect('all')}
+                      className="text-xs md:text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center space-x-1 self-start sm:self-center"
+                    >
+                      <span>View all departments</span>
+                      <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
+                    </button>
+                  )}
                   <button
-                    onClick={() => handleDepartmentSelect('all')}
-                    className="text-xs md:text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center space-x-1 self-start sm:self-center"
+                    onClick={handleRefresh}
+                    className="text-xs md:text-sm text-gray-600 hover:text-gray-800 font-medium flex items-center space-x-1"
                   >
-                    <span>View all departments</span>
-                    <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
+                    <span>🔄 Refresh Data</span>
                   </button>
-                )}
+                </div>
               </div>
 
               {/* Departments Grid - Mobile Responsive */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                 {filteredDepartments.map((department) => {
-                  const deptInfo = DEPARTMENT_CATEGORIES.find(d => d.id === department)
-                  const count = departmentStats[department] || 0
+                  const deptInfo = DEPARTMENT_CATEGORIES.find(d => d.id === department);
+                  const count = departmentStats[department] || 0;
                   
                   // Get unique subjects in this department
                   const departmentSubjects = Array.from(
@@ -582,11 +718,11 @@ export default function Dashboard() {
                         .filter(doc => doc.department === department)
                         .map(doc => doc.subject_name)
                     )
-                  )
+                  );
                   
                   // Get latest document date
-                  const latestDate = getLatestDepartmentDate(department)
-                  const formattedDate = formatDate(latestDate)
+                  const latestDate = getLatestDepartmentDate(department);
+                  const formattedDate = formatDate(latestDate);
 
                   return (
                     <div id={`department-${department}`} key={department} className="h-full">
@@ -698,7 +834,7 @@ export default function Dashboard() {
                         </div>
                       </Link>
                     </div>
-                  )
+                  );
                 })}
               </div>
             </>
@@ -723,6 +859,12 @@ export default function Dashboard() {
                     Upload Document
                   </button>
                 </Link>
+                <button
+                  onClick={handleRefresh}
+                  className="px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-medium rounded-lg md:rounded-xl hover:shadow-lg transition-all text-sm md:text-base"
+                >
+                  Refresh Data
+                </button>
               </div>
             </div>
           )}
@@ -757,5 +899,5 @@ export default function Dashboard() {
         </div>
       </div>
     </>
-  )
+  );
 }
