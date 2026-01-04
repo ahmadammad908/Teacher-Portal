@@ -11,7 +11,7 @@ export default function DepartmentPage() {
   const params = useParams()
   const router = useRouter()
   const department = decodeURIComponent(params.dept as string)
-  
+
   const [documents, setDocuments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -21,7 +21,7 @@ export default function DepartmentPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const searchRef = useRef<HTMLDivElement>(null)
-  const subjectRefs = useRef<{[key: string]: HTMLDivElement | null}>({})
+  const subjectRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
   // Fetch current user on component mount
   useEffect(() => {
@@ -58,13 +58,13 @@ export default function DepartmentPage() {
     if (selectedSubject && subjectRefs.current[selectedSubject]) {
       const element = subjectRefs.current[selectedSubject]
       if (element) {
-        element.scrollIntoView({ 
-          behavior: 'smooth', 
+        element.scrollIntoView({
+          behavior: 'smooth',
           block: 'center'
         })
-        
+
         element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2')
-        
+
         setTimeout(() => {
           element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2')
           setSelectedSubject(null)
@@ -80,7 +80,7 @@ export default function DepartmentPage() {
 
       // First check if user is authenticated
       const { data: { user } } = await supabase.auth.getUser()
-      
+
       // If user exists, set current user
       if (user) {
         setCurrentUser(user)
@@ -96,7 +96,7 @@ export default function DepartmentPage() {
 
       if (error) throw error
       setDocuments(data || [])
-      
+
     } catch (error) {
       console.error('Error fetching documents:', error)
     } finally {
@@ -134,7 +134,7 @@ export default function DepartmentPage() {
 
       // Check if user owns any of these documents
       const userOwnedDocs = subjectDocs?.filter(doc => doc.user_id === user.id) || []
-      
+
       if (userOwnedDocs.length === 0) {
         alert('You can only delete subjects that you have uploaded documents to.')
         return
@@ -152,7 +152,7 @@ export default function DepartmentPage() {
       fetchDepartmentDocuments()
       setShowDeleteConfirm(null)
       alert(`Subject "${subjectName}" has been deleted successfully.`)
-      
+
     } catch (error) {
       console.error('Error deleting subject:', error)
       alert('Failed to delete subject. Please try again.')
@@ -166,19 +166,19 @@ export default function DepartmentPage() {
     .map(subject => {
       const subjectDocs = documents.filter(doc => doc.subject_name === subject)
       const teacher = subjectDocs[0]?.teacher_name || ''
-      
+
       // Get unique user IDs who uploaded documents for this subject
       const uploaderIds = Array.from(new Set(subjectDocs.map(doc => doc.user_id)))
-      
+
       // Convert lecture numbers properly
       const lectures = Array.from(new Set(subjectDocs.map(doc => {
         const lectureNo = doc.lecture_no;
         const num = parseInt(lectureNo);
         return isNaN(num) ? 0 : num;
       })))
-      .filter(lecture => lecture > 0)
-      .sort((a, b) => a - b) as number[]
-      
+        .filter(lecture => lecture > 0)
+        .sort((a, b) => a - b) as number[]
+
       return {
         name: subject,
         teacher,
@@ -190,7 +190,7 @@ export default function DepartmentPage() {
     .sort((a, b) => a.name.localeCompare(b.name))
 
   // Filter subjects based on search
-  const filteredSubjects = subjects.filter(subject => 
+  const filteredSubjects = subjects.filter(subject =>
     subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     subject.teacher.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -205,13 +205,13 @@ export default function DepartmentPage() {
   // Generate search suggestions with type
   const getSearchSuggestions = () => {
     if (!searchTerm.trim()) return []
-    
+
     const suggestions: Array<{
       text: string;
       type: 'subject' | 'teacher';
       subjectName?: string;
     }> = []
-    
+
     subjects.forEach(subject => {
       // Add subject name matches
       if (subject.name.toLowerCase().includes(searchTerm.toLowerCase())) {
@@ -221,7 +221,7 @@ export default function DepartmentPage() {
           subjectName: subject.name
         })
       }
-      
+
       // Add teacher name matches
       if (subject.teacher && subject.teacher.toLowerCase().includes(searchTerm.toLowerCase())) {
         suggestions.push({
@@ -231,14 +231,14 @@ export default function DepartmentPage() {
         })
       }
     })
-    
+
     // Remove duplicates
     const uniqueSuggestions = suggestions.filter((suggestion, index, self) =>
-      index === self.findIndex((s) => 
+      index === self.findIndex((s) =>
         s.text === suggestion.text && s.subjectName === suggestion.subjectName
       )
     )
-    
+
     return uniqueSuggestions.slice(0, 6)
   }
 
@@ -292,8 +292,39 @@ export default function DepartmentPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex flex-col items-center justify-center h-[80vh]">
+        <div className="relative">
+          {/* Outer rotating ring */}
+          <div className="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-blue-500"></div>
+
+          {/* Inner pulsing circle */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="animate-pulse h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-blue-600"></div>
+          </div>
+
+          {/* Dots around the ring */}
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="h-4 w-4 rounded-full bg-blue-600 animate-bounce"></div>
+          </div>
+        </div>
+
+        {/* Loading text with animation */}
+        <div className="mt-6">
+          <p className="text-gray-700 font-medium text-lg">
+            Loading
+            <span className="inline-flex ml-1">
+              <span className="animate-bounce">.</span>
+              <span className="animate-bounce" style={{ animationDelay: '0.1s' }}>.</span>
+              <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>.</span>
+            </span>
+          </p>
+        </div>
+
+        {/* Progress bar (optional) */}
+        <div className="mt-4 w-48 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 animate-shimmer"
+            style={{ width: '60%' }}></div>
+        </div>
       </div>
     )
   }
@@ -301,34 +332,45 @@ export default function DepartmentPage() {
   return (
     <div className="min-h-screen ">
       {/* Header */}
-      <header className="sticky top-0 z-10 ">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Go back"
-              >
-                <ChevronLeft className="h-5 w-5 text-gray-600" />
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 truncate max-w-[200px] sm:max-w-none">
+      <header className="sticky top-0 z-10  shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            {/* RIGHT SECTION */}
+            <div className='order-1 md:order-2 flex justify-start'>
+              {currentUser && (
+                <div className="text-sm text-gray-600">
+                  Logged in as:{' '}
+                  <span className="font-medium break-all">
+                    {currentUser.email}
+                  </span>
+                </div>
+              )}
+            </div>
+            {/* LEFT SECTION */}
+            <div className=" order-2 md:order-1 justify-start">
+
+
+              <div className=" flex items-center gap-2 min-w-0">
+               
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
                   {department}
                 </h1>
-                <p className="text-sm text-gray-500 truncate">
-                  {subjects.length} {subjects.length === 1 ? 'subject' : 'subjects'}
-                </p>
+
+                {/* SUBJECT COUNT */}
+                <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+                  ({subjects.length}{' '}
+                  {subjects.length === 1 ? 'subject' : 'subjects'})
+                </span>
               </div>
             </div>
-            {currentUser && (
-              <div className="text-sm text-gray-600">
-                Logged in as: <span className="font-medium">{currentUser.email}</span>
-              </div>
-            )}
+
+
           </div>
         </div>
       </header>
+
+
+
 
       {/* Search Section */}
       <div className="">
@@ -356,7 +398,7 @@ export default function DepartmentPage() {
                 </button>
               )}
             </div>
-            
+
             {/* Search Suggestions */}
             {showSuggestions && suggestions.length > 0 && (
               <div className="absolute z-50 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
@@ -415,7 +457,7 @@ export default function DepartmentPage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white rounded-lg p-4 border border-gray-200">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -429,7 +471,7 @@ export default function DepartmentPage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white rounded-lg p-4 border border-gray-200">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -453,7 +495,7 @@ export default function DepartmentPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Subjects {searchTerm && `(${filteredSubjects.length} found)`}
           </h2>
-          
+
           {filteredSubjects.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {filteredSubjects.map((subject, index) => (
@@ -479,8 +521,8 @@ export default function DepartmentPage() {
                       </button>
                     </div>
                   )}
-                  
-                  <Link 
+
+                  <Link
                     href={`/dashboard/department/${encodeURIComponent(department)}/subject/${encodeURIComponent(subject.name)}`}
                     className="block"
                   >
@@ -538,7 +580,7 @@ export default function DepartmentPage() {
                             {subject.lectures.length > 0 ? (
                               <div className="flex flex-wrap gap-1.5">
                                 {subject.lectures.slice(0, 6).map(lecture => (
-                                  <span 
+                                  <span
                                     key={lecture}
                                     className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
                                   >
@@ -583,7 +625,7 @@ export default function DepartmentPage() {
                           </div>
                           <h3 className="text-lg font-bold text-gray-900">Delete Subject</h3>
                         </div>
-                        
+
                         <p className="text-gray-600 mb-2">
                           Are you sure you want to delete <span className="font-semibold">"{subject.name}"</span>?
                         </p>
@@ -591,7 +633,7 @@ export default function DepartmentPage() {
                           This will permanently delete all {subject.count} files you uploaded for this subject.
                           Other users' files will remain unaffected.
                         </p>
-                        
+
                         <div className="flex justify-end space-x-3">
                           <button
                             onClick={() => setShowDeleteConfirm(null)}
@@ -633,7 +675,7 @@ export default function DepartmentPage() {
                 No subjects found
               </h3>
               <p className="text-gray-600 max-w-md mx-auto">
-                {searchTerm 
+                {searchTerm
                   ? `No subjects matching "${searchTerm}" were found. Try a different search term.`
                   : 'No subjects are available in this department.'
                 }
