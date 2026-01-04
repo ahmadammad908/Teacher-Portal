@@ -332,7 +332,7 @@ export default function DepartmentPage() {
   return (
     <div className="min-h-screen ">
       {/* Header */}
-      <header className="sticky top-0 z-10  shadow-sm">
+      <header className="sticky top-0 z-50  shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
             {/* RIGHT SECTION */}
