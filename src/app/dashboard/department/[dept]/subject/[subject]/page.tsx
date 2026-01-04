@@ -461,7 +461,7 @@ export default function SubjectPage() {
   return (
     <div className="min-h-screen ">
       {/* Mobile Navigation Header */}
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 lg:hidden">
+      <div className="sticky top-0  bg-white border-b border-gray-200 lg:hidden">
         <div className="px-4 py-3">
           <div className="flex items-center space-x-3">
             <button
