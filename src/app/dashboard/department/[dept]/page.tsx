@@ -311,7 +311,7 @@ export default function DepartmentPage() {
         {/* Loading text with animation */}
         <div className="mt-6">
           <p className="text-gray-700 font-medium text-lg">
-            Loading
+            Loading Subjects
             <span className="inline-flex ml-1">
               <span className="animate-bounce">.</span>
               <span className="animate-bounce" style={{ animationDelay: '0.1s' }}>.</span>
@@ -338,9 +338,9 @@ export default function DepartmentPage() {
             {/* RIGHT SECTION */}
             <div className='order-1 md:order-2 flex justify-start'>
               {currentUser ? (
-                <div className="text-sm text-gray-600 flex items-center gap-1 text-green-600 bg-green-100 px-2 py-1 rounded-md border border-green-200">
+                <div className="text-sm text-gray-600 flex items-center gap-1 text-green-700 bg-green-100 px-2 py-1 rounded-md border border-green-200">
                   Logged in as:
-                  <span className="font-medium break-all text-green-600">
+                  <span className="font-medium break-all text-green-700">
                     {currentUser.email}
                   </span>
                 </div>
@@ -457,9 +457,10 @@ export default function DepartmentPage() {
                     <BookOpen className="h-5 w-5 text-blue-600" />
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Subjects</p>
-                  <p className="text-2xl font-bold text-gray-900">{subjects.length}</p>
+                <div className="ml-4 flex items-center gap-2">
+                   <p className="text-2xl font-bold text-gray-900">{subjects.length}</p>
+                  <p className="text-sm font-medium text-gray-600">(Subjects)</p>
+                 
                 </div>
               </div>
             </div>
@@ -471,9 +472,10 @@ export default function DepartmentPage() {
                     <FileText className="h-5 w-5 text-green-600" />
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Files</p>
+                <div className="ml-4 flex items-center gap-2">
                   <p className="text-2xl font-bold text-gray-900">{documents.length}</p>
+                  <p className="text-sm font-medium text-gray-600">(Total Files)</p>
+                  
                 </div>
               </div>
             </div>
@@ -485,11 +487,12 @@ export default function DepartmentPage() {
                     <User className="h-5 w-5 text-purple-600" />
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Teachers</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="ml-4 flex items-center gap-2">
+                   <p className="text-2xl font-bold text-gray-900">
                     {Array.from(new Set(subjects.map(s => s.teacher).filter(Boolean))).length}
                   </p>
+                  <p className="text-sm font-medium text-gray-600">(Teachers)</p>
+                 
                 </div>
               </div>
             </div>

@@ -4,8 +4,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '../../../../../../../lib/supabase/client'
-import { 
-  Building, BookOpen, Hash, File, Download, ChevronLeft, Search, 
+import {
+  Building, BookOpen, Hash, File, Download, ChevronLeft, Search,
   Calendar, User, Tag, Eye, ExternalLink, Filter, Clock, CheckCircle, X, ArrowRight,
   Trash2, AlertTriangle, Edit2, MoreVertical
 } from 'lucide-react'
@@ -53,7 +53,7 @@ export default function SubjectPage() {
   const router = useRouter()
   const department = decodeURIComponent(params.dept as string)
   const subject = decodeURIComponent(params.subject as string)
-  
+
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -67,8 +67,8 @@ export default function SubjectPage() {
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const [showDropdown, setShowDropdown] = useState<string | null>(null)
   const searchRef = useRef<HTMLDivElement>(null)
-  const lectureRefs = useRef<{[key: number]: HTMLDivElement | null}>({})
-  const dropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({})
+  const lectureRefs = useRef<{ [key: number]: HTMLDivElement | null }>({})
+  const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
   useEffect(() => {
     // Fetch current user on component mount
@@ -78,7 +78,7 @@ export default function SubjectPage() {
       setCurrentUser(user)
     }
     fetchCurrentUser()
-    
+
     if (department && subject) {
       fetchSubjectDocuments()
     }
@@ -91,7 +91,7 @@ export default function SubjectPage() {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSuggestions(false)
       }
-      
+
       // Close dropdowns
       const clickedOutsideAllDropdowns = Object.values(dropdownRefs.current).every(
         ref => ref && !ref.contains(event.target as Node)
@@ -113,13 +113,13 @@ export default function SubjectPage() {
       const element = lectureRefs.current[selectedLecture]
       if (element) {
         setTimeout(() => {
-          element.scrollIntoView({ 
-            behavior: 'smooth', 
+          element.scrollIntoView({
+            behavior: 'smooth',
             block: 'center'
           })
-          
+
           element.classList.add('ring-4', 'ring-blue-400', 'ring-offset-2')
-          
+
           setTimeout(() => {
             element.classList.remove('ring-4', 'ring-blue-400', 'ring-offset-2')
             setSelectedLecture(null)
@@ -143,11 +143,11 @@ export default function SubjectPage() {
 
       if (error) throw error
       setDocuments(data || [])
-      
+
       if (data && data.length > 0) {
         setTeacher(data[0].teacher_name || '')
       }
-      
+
     } catch (error) {
       console.error('Error fetching documents:', error)
     } finally {
@@ -201,7 +201,7 @@ export default function SubjectPage() {
       fetchSubjectDocuments()
       setShowDeleteConfirm(null)
       alert(`File "${document.file_name}" has been deleted successfully.`)
-      
+
     } catch (error) {
       console.error('Error deleting document:', error)
       alert('Failed to delete file. Please try again.')
@@ -223,9 +223,9 @@ export default function SubjectPage() {
     })
 
   // Filter lectures based on search
-  const filteredLectures = lectures.filter(lecture => 
+  const filteredLectures = lectures.filter(lecture =>
     lecture.number.toString().includes(searchTerm) ||
-    lecture.documents.some(doc => 
+    lecture.documents.some(doc =>
       doc.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.tags?.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
     )
@@ -240,13 +240,13 @@ export default function SubjectPage() {
   // Generate search suggestions
   const getSearchSuggestions = () => {
     if (!searchTerm.trim()) return []
-    
+
     const suggestions: Array<{
       type: 'lecture' | 'filename' | 'tag';
       text: string;
       lectureNumber?: number;
     }> = []
-    
+
     lectures.forEach(lecture => {
       if (lecture.number.toString().includes(searchTerm)) {
         suggestions.push({
@@ -255,7 +255,7 @@ export default function SubjectPage() {
           lectureNumber: lecture.number
         })
       }
-      
+
       lecture.documents.forEach(doc => {
         if (doc.file_name.toLowerCase().includes(searchTerm.toLowerCase())) {
           suggestions.push({
@@ -264,7 +264,7 @@ export default function SubjectPage() {
             lectureNumber: lecture.number
           })
         }
-        
+
         if (doc.tags) {
           doc.tags.forEach(tag => {
             if (tag.toLowerCase().includes(searchTerm.toLowerCase())) {
@@ -278,13 +278,13 @@ export default function SubjectPage() {
         }
       })
     })
-    
+
     const uniqueSuggestions = suggestions.filter((suggestion, index, self) =>
-      index === self.findIndex((s) => 
+      index === self.findIndex((s) =>
         s.text === suggestion.text && s.type === suggestion.type
       )
     )
-    
+
     return uniqueSuggestions.slice(0, 6)
   }
 
@@ -419,9 +419,44 @@ export default function SubjectPage() {
     setShowPreview(true)
   }
 
-  if (loading) {
-    return <LoadingSpinner />
-  }
+ if (loading) {
+  return (
+    <div className="flex flex-col items-center justify-center h-[80vh]">
+        <div className="relative">
+          {/* Outer rotating ring */}
+          <div className="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-blue-500"></div>
+
+          {/* Inner pulsing circle */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="animate-pulse h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-blue-600"></div>
+          </div>
+
+          {/* Dots around the ring */}
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="h-4 w-4 rounded-full bg-blue-600 animate-bounce"></div>
+          </div>
+        </div>
+
+        {/* Loading text with animation */}
+        <div className="mt-6">
+          <p className="text-gray-700 font-medium text-lg">
+            Loading Subjects Details
+            <span className="inline-flex ml-1">
+              <span className="animate-bounce">.</span>
+              <span className="animate-bounce" style={{ animationDelay: '0.1s' }}>.</span>
+              <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>.</span>
+            </span>
+          </p>
+        </div>
+
+        {/* Progress bar (optional) */}
+        <div className="mt-4 w-48 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 animate-shimmer"
+            style={{ width: '60%' }}></div>
+        </div>
+      </div>
+  );
+}
 
   return (
     <div className="min-h-screen ">
@@ -442,17 +477,8 @@ export default function SubjectPage() {
               </div>
               <h1 className="text-sm font-semibold text-gray-900 truncate">{subject}</h1>
             </div>
-            {teacher && (
-              <div className="flex items-center space-x-1 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
-                <User className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate max-w-[80px]">{teacher}</span>
-              </div>
-            )}
-            {currentUser && (
-              <div className="text-xs text-gray-500 truncate max-w-[100px]">
-                {currentUser.email?.split('@')[0]}
-              </div>
-            )}
+
+
           </div>
         </div>
       </div>
@@ -478,11 +504,7 @@ export default function SubjectPage() {
                 <BookOpen className="h-4 w-4" />
                 <span className="font-medium">{subject}</span>
               </div>
-              {currentUser && (
-                <div className="text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
-                  Logged in as: <span className="font-medium">{currentUser.email}</span>
-                </div>
-              )}
+
             </div>
           </div>
         </div>
@@ -495,24 +517,30 @@ export default function SubjectPage() {
           <div className="bg-white rounded-xl shadow-sm p-4">
             <div className="flex flex-col space-y-4">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-1">{subject}</h1>
+                <h1 className="text-[20px] font-bold text-gray-900 mb-1 ml-1">{subject}</h1>
                 <div className="flex flex-wrap gap-2">
+
                   {teacher && (
-                    <div className="flex items-center space-x-1 text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
-                      <User className="h-4 w-4" />
-                      <span className="text-sm font-medium">{teacher}</span>
+                    <div className="flex items-center space-x-1 text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg  ">
+                      <User className="h-4 w-4 " />
+                      <span className="text-sm font-medium ">{teacher}</span>
                     </div>
                   )}
+
                   <div className="flex items-center space-x-1 text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
                     <Building className="h-4 w-4" />
                     <span className="text-sm font-medium">{department}</span>
                   </div>
                   {currentUser && (
-                    <div className="flex items-center space-x-1 text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg">
-                      <User className="h-4 w-4" />
-                      <span className="text-sm font-medium">You</span>
+                    <div className="flex items-center space-x-1 text-green-700 bg-green-200 px-3 py-1.5 rounded-lg whitespace-nowrap max-w-full">
+                      <User className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-sm font-medium truncate">
+                        Logged in as {currentUser.email}
+                      </span>
                     </div>
                   )}
+
+
                 </div>
               </div>
             </div>
@@ -539,7 +567,7 @@ export default function SubjectPage() {
                   <span className="text-sm font-medium">{department}</span>
                 </div>
                 {currentUser && (
-                  <div className="flex items-center space-x-2 text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg">
+                  <div className="flex items-center space-x-2 text-green-700 bg-green-200 px-3 py-1.5 rounded-lg">
                     <User className="h-4 w-4" />
                     <span className="text-sm font-medium">Logged in as {currentUser.email}</span>
                   </div>
@@ -572,7 +600,7 @@ export default function SubjectPage() {
                 </button>
               )}
             </div>
-            
+
             {/* Search Suggestions */}
             {showSuggestions && suggestions.length > 0 && (
               <div className="absolute z-50 left-4 right-4 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
@@ -628,8 +656,8 @@ export default function SubjectPage() {
         <div className="space-y-4 lg:space-y-6">
           {filteredLectures.length > 0 ? (
             filteredLectures.map((lecture) => (
-              <div 
-                key={lecture.number} 
+              <div
+                key={lecture.number}
                 ref={(el) => setLectureRef(lecture.number, el)}
                 className={`bg-white rounded-xl lg:rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ${selectedLecture === lecture.number ? 'ring-4 ring-blue-400 ring-offset-2' : ''}`}
               >
@@ -649,7 +677,7 @@ export default function SubjectPage() {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="hidden lg:block text-right">
                       <div className="text-sm font-medium text-gray-500">Sequence</div>
                       <div className="text-sm font-semibold text-gray-900">
@@ -698,9 +726,9 @@ export default function SubjectPage() {
                                 >
                                   <MoreVertical className="h-4 w-4 text-gray-600" />
                                 </button>
-                                
+
                                 {showDropdown === doc.id && (
-                                  <div 
+                                  <div
                                     ref={(el) => setDropdownRef(doc.id, el)}
                                     className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
                                   >
@@ -720,7 +748,7 @@ export default function SubjectPage() {
                                 )}
                               </div>
                             )}
-                            
+
                             {/* Preview Button Mobile */}
                             {isPreviewable(doc.file_type) && (
                               <button
@@ -765,7 +793,7 @@ export default function SubjectPage() {
                         {doc.tags && doc.tags.length > 0 && (
                           <div className="flex flex-wrap gap-2 pt-2">
                             {doc.tags.slice(0, 2).map((tag, tagIdx) => (
-                              <span 
+                              <span
                                 key={tagIdx}
                                 className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded"
                               >
@@ -787,7 +815,7 @@ export default function SubjectPage() {
                           <div className="text-2xl pt-1">
                             {getFileIcon(doc.file_name)}
                           </div>
-                          
+
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between">
                               <div className="flex-1 min-w-0">
@@ -802,7 +830,7 @@ export default function SubjectPage() {
                                     </span>
                                   )}
                                 </div>
-                                
+
                                 <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-3">
                                   <span className="flex items-center space-x-1">
                                     <File className="h-3.5 w-3.5" />
@@ -816,11 +844,11 @@ export default function SubjectPage() {
                                     <span>{formatDateTime(doc.uploaded_at)}</span>
                                   </span>
                                 </div>
-                                
+
                                 {doc.tags && doc.tags.length > 0 && (
                                   <div className="flex flex-wrap gap-2">
                                     {doc.tags.slice(0, 4).map((tag, tagIdx) => (
-                                      <span 
+                                      <span
                                         key={tagIdx}
                                         className="text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg font-medium"
                                       >
@@ -838,7 +866,7 @@ export default function SubjectPage() {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center space-x-2">
                           {/* More Options Button Desktop - Only show if user can delete */}
                           {currentUser && canDeleteDocument(doc) && (
@@ -854,9 +882,9 @@ export default function SubjectPage() {
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </button>
-                              
+
                               {showDropdown === doc.id && (
-                                <div 
+                                <div
                                   ref={(el) => setDropdownRef(doc.id, el)}
                                   className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-10 overflow-hidden"
                                 >
@@ -883,7 +911,7 @@ export default function SubjectPage() {
                               )}
                             </div>
                           )}
-                          
+
                           {/* Preview Button Desktop */}
                           {isPreviewable(doc.file_type) && (
                             <button
@@ -895,7 +923,7 @@ export default function SubjectPage() {
                               <span>Preview</span>
                             </button>
                           )}
-                          
+
                           {/* Download Button Desktop */}
                           <a
                             href={doc.download_url}
@@ -907,7 +935,7 @@ export default function SubjectPage() {
                             <Download className="h-4 w-4" />
                             <span>Download</span>
                           </a>
-                          
+
                           {/* Open in New Tab Desktop */}
                           <a
                             href={doc.download_url}
@@ -935,7 +963,7 @@ export default function SubjectPage() {
                   {searchTerm ? 'No matching lectures found' : 'No lectures available'}
                 </h3>
                 <p className="text-sm lg:text-base text-gray-600 mb-6">
-                  {searchTerm 
+                  {searchTerm
                     ? 'Try adjusting your search terms'
                     : 'This subject does not have any lectures uploaded yet.'}
                 </p>
@@ -978,14 +1006,14 @@ export default function SubjectPage() {
               </div>
               <h3 className="text-lg font-bold text-gray-900">Delete File</h3>
             </div>
-            
+
             <p className="text-gray-600 mb-2">
               Are you sure you want to delete this file?
             </p>
             <p className="text-sm text-gray-500 mb-6">
               This action cannot be undone. The file will be permanently removed from the database.
             </p>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
