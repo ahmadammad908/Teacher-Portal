@@ -338,9 +338,9 @@ export default function DepartmentPage() {
             {/* RIGHT SECTION */}
             <div className='order-1 md:order-2 flex justify-start'>
               {currentUser ? (
-                <div className="text-sm text-gray-600 flex items-center gap-1 text-green-700 bg-green-100 px-2 py-1 rounded-md border border-green-200">
+                <div className="text-sm text-gray-600 flex items-center gap-1 text-green-600 bg-green-100 px-2 py-1 rounded-md border border-green-200">
                   Logged in as:
-                  <span className="font-medium break-all text-green-700">
+                  <span className="font-medium break-all text-green-600">
                     {currentUser.email}
                   </span>
                 </div>
