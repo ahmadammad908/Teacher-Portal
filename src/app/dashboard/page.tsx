@@ -32,7 +32,7 @@ export default function Dashboard() {
   const [searchFocused, setSearchFocused] = useState(false)
   const [totalCount, setTotalCount] = useState<number>(0)
   const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0 })
-  
+
   const searchRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -41,7 +41,7 @@ export default function Dashboard() {
     try {
       setLoading(true);
       setLoadingProgress({ current: 0, total: 0 });
-      
+
       const supabase = createClient();
 
       console.log('Starting to fetch all documents...');
@@ -84,11 +84,11 @@ export default function Dashboard() {
         if (data && data.length > 0) {
           allDocuments = [...allDocuments, ...data];
           start += pageSize;
-          
+
           // Update progress
-          setLoadingProgress({ 
-            current: allDocuments.length, 
-            total: count || allDocuments.length + pageSize 
+          setLoadingProgress({
+            current: allDocuments.length,
+            total: count || allDocuments.length + pageSize
           });
 
           console.log(`Fetched ${data.length} documents, total so far: ${allDocuments.length}`);
@@ -164,7 +164,7 @@ export default function Dashboard() {
   });
 
   // Get search suggestions
-  const searchSuggestions = departments.filter(dept => 
+  const searchSuggestions = departments.filter(dept =>
     dept.toLowerCase().includes(searchTerm.toLowerCase())
   ).slice(0, 5); // Limit to 5 suggestions
 
@@ -179,11 +179,11 @@ export default function Dashboard() {
   // Format date properly
   const formatDate = (dateString: string | Date | null | undefined) => {
     if (!dateString) return 'No recent files';
-    
+
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 'Invalid date';
-      
+
       return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -197,9 +197,9 @@ export default function Dashboard() {
   // Get latest date for a department
   const getLatestDepartmentDate = (department: string) => {
     const departmentDocs = documents.filter(doc => doc.department === department);
-    
+
     if (departmentDocs.length === 0) return null;
-    
+
     // Find the latest date from created_at or updated_at
     let latestDate: Date | null = null;
     departmentDocs.forEach(doc => {
@@ -211,7 +211,7 @@ export default function Dashboard() {
         }
       }
     });
-    
+
     return latestDate;
   };
 
@@ -230,7 +230,7 @@ export default function Dashboard() {
     setSelectedDepartment(department);
     setSearchTerm('');
     setShowSearchSuggestions(false);
-    
+
     // Scroll to the selected department
     setTimeout(() => {
       const element = document.getElementById(`department-${department}`);
@@ -255,7 +255,7 @@ export default function Dashboard() {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
-    
+
     if (value.length > 0) {
       setShowSearchSuggestions(true);
     } else {
@@ -308,9 +308,9 @@ export default function Dashboard() {
               <FileText className="h-8 w-8 text-blue-500 animate-pulse" />
             </div>
           </div>
-          
+
           <p className="mt-6 text-lg font-medium text-gray-700">Loading lecture materials...</p>
-          
+
           {loadingProgress.total > 0 && (
             <div className="mt-4 space-y-2">
               <div className="flex justify-between text-sm text-gray-600">
@@ -318,10 +318,10 @@ export default function Dashboard() {
                 <span>{loadingProgress.current} / {loadingProgress.total}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ 
-                    width: `${loadingProgress.total > 0 ? (loadingProgress.current / loadingProgress.total) * 100 : 0}%` 
+                  style={{
+                    width: `${loadingProgress.total > 0 ? (loadingProgress.current / loadingProgress.total) * 100 : 0}%`
                   }}
                 ></div>
               </div>
@@ -330,7 +330,7 @@ export default function Dashboard() {
               </p>
             </div>
           )}
-          
+
           <button
             onClick={handleRefresh}
             className="mt-6 px-4 py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
@@ -345,23 +345,33 @@ export default function Dashboard() {
   return (
     <>
       {/* Add viewport meta tag to prevent zoom */}
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen ">
         {/* Header with Stats */}
-        <div className="bg-white shadow-sm border-b">
+        <div className=" shadow-sm ">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold text-gray-900">Lecture Materials</h1>
-                  <button
-                    onClick={handleRefresh}
-                    className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-                  >
-                    <span>🔄</span>
-                    Refresh
-                  </button>
+                <div className="flex items-center gap-3 flex-wrap ">
+                  <div className='flex items-center gap-3 order-2 md:order-1'>
+                    <h1 className="text-3xl font-bold text-gray-900">Lecture Materials</h1>
+                  </div>
+                  <div className='order-1 md:order-2'>
+                    <button
+                      onClick={handleRefresh}
+                      className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Refresh
+                    </button>
+                  </div>
+
                 </div>
-                <div className="flex items-center gap-2 mt-2">
+
+                {/* Refresh button for mobile view */}
+
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <p className="text-gray-600">
                     Access and organize lecture materials by department
                   </p>
@@ -405,7 +415,7 @@ export default function Dashboard() {
                 <Building className="h-8 w-8 md:h-12 md:w-12 opacity-80" />
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl p-4 md:p-6 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -415,7 +425,7 @@ export default function Dashboard() {
                 <BookOpen className="h-8 w-8 md:h-12 md:w-12 opacity-80" />
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl p-4 md:p-6 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -444,7 +454,7 @@ export default function Dashboard() {
                     <Search className="h-4 w-4 mr-2 text-blue-500" />
                     Search Departments:
                   </label>
-                  
+
                   <div className="relative">
                     <div className="relative">
                       <Search className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 md:h-5 md:w-5" />
@@ -519,7 +529,7 @@ export default function Dashboard() {
                       </div>
                     )}
                   </div>
-                  
+
                   {searchTerm && (
                     <div className="text-xs md:text-sm text-gray-500">
                       <span className="font-medium">{searchSuggestions.length}</span> department{searchSuggestions.length !== 1 ? 's' : ''} found
@@ -607,8 +617,8 @@ export default function Dashboard() {
                                   </div>
                                 </div>
                                 <span className={`text-xs font-medium px-2 py-1 rounded whitespace-nowrap ml-2 ${fileCount > 0
-                                    ? isSelected ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                                    : 'bg-gray-100 text-gray-400'
+                                  ? isSelected ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                                  : 'bg-gray-100 text-gray-400'
                                   }`}>
                                   {fileCount} file{fileCount !== 1 ? 's' : ''}
                                 </span>
@@ -710,7 +720,7 @@ export default function Dashboard() {
                 {filteredDepartments.map((department) => {
                   const deptInfo = DEPARTMENT_CATEGORIES.find(d => d.id === department);
                   const count = departmentStats[department] || 0;
-                  
+
                   // Get unique subjects in this department
                   const departmentSubjects = Array.from(
                     new Set(
@@ -719,7 +729,7 @@ export default function Dashboard() {
                         .map(doc => doc.subject_name)
                     )
                   );
-                  
+
                   // Get latest document date
                   const latestDate = getLatestDepartmentDate(department);
                   const formattedDate = formatDate(latestDate);
@@ -730,7 +740,7 @@ export default function Dashboard() {
                         <div className="group bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6 hover:shadow-md md:hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden relative h-full flex flex-col">
                           {/* Accent border on hover */}
                           <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                          
+
                           {/* Header Section */}
                           <div className="flex items-start justify-between mb-4 md:mb-5">
                             <div className="flex items-start space-x-3 md:space-x-4">
@@ -754,7 +764,7 @@ export default function Dashboard() {
                             </div>
                             <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-gray-400 group-hover:text-blue-500 transition-colors flex-shrink-0 mt-1" />
                           </div>
-                          
+
                           {/* Stats Section */}
                           <div className="space-y-4 md:space-y-5 flex-grow">
                             <div className="grid grid-cols-2 gap-3 md:gap-4">
@@ -765,13 +775,13 @@ export default function Dashboard() {
                                 </div>
                                 <p className="text-xl md:text-2xl font-bold text-gray-900 mt-1 md:mt-2">{count}</p>
                                 <div className="h-1 w-full bg-gray-200 rounded-full mt-1 md:mt-2 overflow-hidden">
-                                  <div 
+                                  <div
                                     className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"
                                     style={{ width: `${Math.min(count * 10, 100)}%` }}
                                   ></div>
                                 </div>
                               </div>
-                              
+
                               <div className="bg-gray-50 rounded-lg p-2 md:p-3">
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs md:text-sm text-gray-600">Subjects</span>
@@ -779,14 +789,14 @@ export default function Dashboard() {
                                 </div>
                                 <p className="text-xl md:text-2xl font-bold text-gray-900 mt-1 md:mt-2">{departmentSubjects.length}</p>
                                 <div className="h-1 w-full bg-gray-200 rounded-full mt-1 md:mt-2 overflow-hidden">
-                                  <div 
+                                  <div
                                     className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full"
                                     style={{ width: `${Math.min(departmentSubjects.length * 20, 100)}%` }}
                                   ></div>
                                 </div>
                               </div>
                             </div>
-                            
+
                             {/* Subjects Section */}
                             {departmentSubjects.length > 0 && (
                               <div className="pt-3 md:pt-4 border-t border-gray-100">
@@ -823,7 +833,7 @@ export default function Dashboard() {
                                 </div>
                               </div>
                             )}
-                            
+
                             {/* Button Section */}
                             <div className="pt-3 md:pt-4 border-t border-gray-100 mt-auto">
                               <button className="w-full py-2 md:py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all transform hover:-translate-y-0.5 text-xs md:text-sm">
