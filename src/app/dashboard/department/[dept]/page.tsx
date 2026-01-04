@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '../../../../../lib/supabase/client'
-import { BookOpen, ChevronLeft, Search, User, FileText, X, ArrowRight, Trash2, AlertTriangle } from 'lucide-react'
+import { BookOpen, ChevronLeft, Search, User, FileText, X, ArrowRight, Trash2, AlertTriangle, LogOut } from 'lucide-react'
 import Link from 'next/link'
 
 export default function DepartmentPage() {
@@ -337,21 +337,27 @@ export default function DepartmentPage() {
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
             {/* RIGHT SECTION */}
             <div className='order-1 md:order-2 flex justify-start'>
-              {currentUser && (
-                <div className="text-sm text-gray-600">
-                  Logged in as:{' '}
-                  <span className="font-medium break-all">
+              {currentUser ? (
+                <div className="text-sm text-gray-600 flex items-center gap-1 text-green-700 bg-green-100 px-2 py-1 rounded-md border border-green-200">
+                  Logged in as:
+                  <span className="font-medium break-all text-green-700">
                     {currentUser.email}
                   </span>
                 </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm bg-gray-100 text-gray-600 px-3 py-1.5 rounded-md border border-gray-200">
+                  <LogOut className="h-4 w-4 text-gray-500" />
+                  <span className="font-medium">Guest user</span>
+                </div>
               )}
+
             </div>
             {/* LEFT SECTION */}
             <div className=" order-2 md:order-1 justify-start">
 
 
               <div className=" flex items-center gap-2 min-w-0">
-               
+
                 <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
                   {department}
                 </h1>
