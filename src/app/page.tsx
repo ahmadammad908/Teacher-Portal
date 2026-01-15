@@ -1,11 +1,10 @@
-import Department from './dashboard/page';
-
+import HeroSection from './components/HeroSection';
 export default function Home() {
   return (
-   <>
-  	<>
-  <Department />
-  </>
-   </>
+    <>
+      <>
+       <HeroSection />
+      </>
+    </>
   );
 }

@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { createClient } from '../../../lib/supabase/client'
-import { Mail, Lock, User, Eye, EyeOff, AlertCircle, Mail as MailIcon, Shield,  HelpCircle, ShieldCheck, ArrowRight, CheckCircle } from 'lucide-react'
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle, Shield,  HelpCircle, ShieldCheck, ArrowRight, CheckCircle } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 type AuthMode = 'signin' | 'signup'
 
 export default function AuthForm() {
-  const [mode, setMode] = useState<AuthMode>('signin')
+  const [mode] = useState<AuthMode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -15,14 +16,7 @@ export default function AuthForm() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [showPassword, setShowPassword] = useState(false)
 
-  const toggleMode = () => {
-    setMode(mode === 'signin' ? 'signup' : 'signin')
-    setEmail('')
-    setPassword('')
-    setFullName('')
-    setMessage(null)
-  }
-
+const router = useRouter()
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -66,7 +60,7 @@ export default function AuthForm() {
         })
 
         setTimeout(() => {
-          window.location.href = '/'
+            router.push('/dashboard')
         }, 1000)
 
       } else {
@@ -90,7 +84,7 @@ export default function AuthForm() {
           return
         }
 
-        window.location.href = '/'
+       router.push('/dashboard')
       }
     } catch (error: any) {
       setMessage({
